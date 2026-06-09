@@ -1,0 +1,28 @@
+.app-header {
+  display: flex;
+  align-items: center;
+  background: #111827;
+}
+
+.app-logo {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  margin-right: 32px;
+  white-space: nowrap;
+}
+
+.app-menu {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-content {
+  padding: 24px;
+  background: #f3f4f6;
+}
+
+.page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
