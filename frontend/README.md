@@ -23,6 +23,18 @@ http://127.0.0.1:5173
 http://127.0.0.1:8000
 ```
 
+本地可复制环境变量示例：
+
+```powershell
+copy .env.example .env
+```
+
+线上部署时设置：
+
+```text
+VITE_API_BASE_URL=https://cbfinace-api.onrender.com
+```
+
 ## 脚本
 
 ```powershell

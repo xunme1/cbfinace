@@ -102,6 +102,19 @@ http://127.0.0.1:5173
 
 前端目前默认请求后端地址 `http://127.0.0.1:8000`，配置位于 `frontend/src/api/client.ts`。
 
+也可以通过环境变量覆盖：
+
+```powershell
+cd frontend
+copy .env.example .env
+```
+
+然后修改 `frontend/.env`：
+
+```text
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
 ## 数据文件
 
 后端按日期读取数据文件：
@@ -151,6 +164,12 @@ npm run preview   # 预览生产构建
 http://127.0.0.1:8000
 ```
 
+生产环境默认后端地址：
+
+```text
+https://cbfinace-api.onrender.com
+```
+
 主要接口：
 
 | 方法 | 路径 | 说明 |
@@ -187,6 +206,95 @@ backend/data/positions_2026-03-27.csv
 ### 页面或接口文案出现乱码
 
 当前部分源码文件中的中文文案存在编码异常。运行逻辑主要依赖字段和接口结构，不影响 README 中描述的启动流程；如果要进一步整理项目，建议统一将源码文件转换为 UTF-8 编码并修正文案。
+
+## 线上部署
+
+项目已加入一套默认部署配置：
+
+- 后端：`render.yaml`，适用于 Render Web Service。
+- 前端：`vercel.json`，适用于 Vercel 静态部署。
+- 前端线上 API 地址：`https://cbfinace-api.onrender.com`。
+- 后端允许的前端来源：`https://cbfinace.vercel.app`。
+
+### 1. 部署后端到 Render
+
+1. 登录 Render。
+2. 选择 New Blueprint。
+3. 连接 GitHub 仓库：`https://github.com/xunme1/cbfinace.git`。
+4. Render 会读取根目录 `render.yaml` 并创建 `cbfinace-api` 服务。
+5. 部署完成后访问：
+
+```text
+https://cbfinace-api.onrender.com/docs
+```
+
+如果 Render 生成的服务域名不是 `https://cbfinace-api.onrender.com`，请把实际域名填入前端环境变量 `VITE_API_BASE_URL`。
+
+### 2. 部署前端到 Vercel
+
+1. 登录 Vercel。
+2. 导入 GitHub 仓库：`xunme1/cbfinace`。
+3. 使用根目录的 `vercel.json` 部署。
+4. 确认环境变量：
+
+```text
+VITE_API_BASE_URL=https://cbfinace-api.onrender.com
+```
+
+部署完成后默认访问：
+
+```text
+https://cbfinace.vercel.app
+```
+
+### 3. 修改线上域名
+
+如果你绑定了自定义域名，例如：
+
+```text
+前端：https://cbfinace.example.com
+后端：https://api.cbfinace.example.com
+```
+
+需要同步修改：
+
+前端环境变量：
+
+```text
+VITE_API_BASE_URL=https://api.cbfinace.example.com
+```
+
+后端环境变量：
+
+```text
+FRONTEND_ORIGINS=https://cbfinace.example.com
+```
+
+如果保留本地开发地址，可以写成：
+
+```text
+FRONTEND_ORIGINS=https://cbfinace.example.com,http://127.0.0.1:5173,http://localhost:5173
+```
+
+### 4. 部署后检查
+
+后端检查：
+
+```text
+https://cbfinace-api.onrender.com/docs
+```
+
+前端检查：
+
+```text
+https://cbfinace.vercel.app
+```
+
+如果前端能打开但数据加载失败，优先检查：
+
+- `VITE_API_BASE_URL` 是否指向实际后端域名。
+- `FRONTEND_ORIGINS` 是否包含实际前端域名。
+- `backend/data` 是否包含查询日期对应的 `positions_YYYY-MM-DD.csv`。
 
 ## 开发建议
 
