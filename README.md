@@ -7,6 +7,7 @@
 - 仪表盘：展示品种覆盖、信号分布、板块变化和重点品种。
 - 期货席位追踪：按日期、信号、板块和关键词筛选五大席位持仓变化。
 - 品种席位详情：查看单个品种的五大席位汇总、合约汇总、合约-席位明细和席位对峙分析。
+- 资金流向排名：展示五大席位大资金动向下的品种流入 / 流出 Top 5。
 - 旧版信号列表：保留原机构 / 散户矩阵信号，用于兼容和对照。
 - 数据接口：FastAPI 提供仪表盘、信号、图表和品种相关 API。
 
@@ -184,6 +185,9 @@ https://cbfinace-api.onrender.com
 | `GET` | `/api/dashboard?date=2026-03-27` | 获取仪表盘数据 |
 | `GET` | `/api/seat-tracker?date=2026-06-09` | 获取期货席位追踪列表 |
 | `GET` | `/api/seat-tracker/categories?date=2026-06-09` | 获取席位追踪板块列表 |
+| `POST` | `/api/data/refresh?date=2026-06-10` | 手动触发数据抓取 |
+| `GET` | `/api/fund-flows/rank?date=2026-03-27&limit=5` | 获取资金流入 / 流出排名 |
+| `GET` | `/api/fund-flows/products/{product}?date=2026-03-27` | 获取单品种资金流详情 |
 | `GET` | `/api/signals?date=2026-03-27` | 获取信号列表 |
 | `GET` | `/api/signal-categories?date=2026-03-27` | 获取板块分类 |
 | `GET` | `/api/signal-types` | 获取信号类型 |
@@ -196,6 +200,64 @@ https://cbfinace-api.onrender.com
 | `GET` | `/api/products/{product}/dashboard?date=2026-06-09` | 获取品种席位持仓详情 |
 
 席位追踪接口第一阶段只使用 CSV 中真实存在的 `category` 字段作为板块筛选，不使用交易所字段，也不返回 `strength` 或 `exchange` 字段。
+
+## 数据抓取
+
+后端已经集成交易可查抓取能力：
+
+- 缺少 `positions_日期.csv` 时，默认会尝试自动抓取。
+- 缺少 `fund_flows_日期.csv` 时，资金流接口默认会尝试自动抓取。
+- 也可以通过 `/api/data/refresh` 手动触发抓取。
+
+抓取依赖 Playwright 和交易可查登录态。先把登录态文件放到：
+
+```text
+backend/auth.json
+```
+
+也可以用环境变量指定：
+
+```text
+JYKC_AUTH_FILE=/absolute/path/to/auth.json
+```
+
+服务器首次安装 Playwright 后，还需要安装浏览器：
+
+```bash
+cd /root/cbfinace/backend
+source .venv/bin/activate
+pip install -r app/api/requirements.txt
+python -m playwright install chromium
+```
+
+如果服务器缺少浏览器依赖，Ubuntu 可执行：
+
+```bash
+python -m playwright install-deps chromium
+```
+
+常用环境变量：
+
+| 变量 | 默认值 | 说明 |
+| --- | --- | --- |
+| `JYKC_AUTH_FILE` | 空 | 登录态文件路径；为空时优先找 `backend/auth.json` |
+| `JYKC_BROWSER_CHANNEL` | 空 | 浏览器通道；为空时使用 Playwright Chromium，本地也可设为 `msedge` |
+| `JYKC_HEADLESS` | `true` | 是否无头运行浏览器 |
+| `JYKC_AUTO_SCRAPE_ON_MISSING` | `true` | 缺数据时是否自动抓取 |
+| `JYKC_SCHEDULER_ENABLED` | `false` | 是否启用每日定时抓取 |
+| `JYKC_SCHEDULER_TIME` | `17:30` | 每日抓取时间 |
+
+手动抓取示例：
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/data/refresh?date=2026-06-10&include_positions=true&include_fund_flows=true"
+```
+
+资金流排名示例：
+
+```bash
+curl "http://127.0.0.1:8000/api/fund-flows/rank?date=2026-03-27&limit=5"
+```
 
 ## 常见问题
 
@@ -332,6 +394,7 @@ sudo systemctl reload nginx
 
 ```text
 http://服务器公网IP/seat-tracker
+http://服务器公网IP/fund-flows
 http://服务器公网IP/products/甲醇?date=2026-06-09
 ```
 

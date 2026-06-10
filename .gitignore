@@ -43,3 +43,12 @@ Thumbs.db
 # Local cache
 .cache/
 .parcel-cache/
+
+# Scraper sensitive/debug artifacts
+jykc_scraper/
+jykc_scraper/scripts/auth.json
+jykc_scraper/data/debug/
+jykc_scraper/data/debug_fund_flow/
+backend/auth.json
+backend/data/debug/
+backend/data/debug_fund_flow/

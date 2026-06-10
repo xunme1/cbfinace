@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard";
 import Signals from "./pages/Signals";
 import SeatTracker from "./pages/SeatTracker";
 import ProductDashboard from "./pages/ProductDashboard";
+import FundFlows from "./pages/FundFlows";
 import "./App.css";
 
 const { Header, Content } = Layout;
@@ -15,6 +16,8 @@ function AppShell() {
     ? "/signals"
     : location.pathname.startsWith("/seat-tracker")
     ? "/seat-tracker"
+    : location.pathname.startsWith("/fund-flows")
+    ? "/fund-flows"
     : "/";
 
   return (
@@ -37,6 +40,10 @@ function AppShell() {
               label: <Link to="/seat-tracker">席位追踪</Link>,
             },
             {
+              key: "/fund-flows",
+              label: <Link to="/fund-flows">资金流向</Link>,
+            },
+            {
               key: "/signals",
               label: <Link to="/signals">旧版信号</Link>,
             },
@@ -48,6 +55,7 @@ function AppShell() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/seat-tracker" element={<SeatTracker />} />
+          <Route path="/fund-flows" element={<FundFlows />} />
           <Route path="/signals" element={<Signals />} />
           <Route path="/products/:product" element={<ProductDashboard />} />
         </Routes>

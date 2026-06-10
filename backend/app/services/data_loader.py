@@ -1,6 +1,7 @@
 from pathlib import Path
 import pandas as pd
 from app.core.paths import DATA_DIR
+from app.services.data_refresh_service import ensure_positions_data
 
 def get_positions_file(date: str) -> Path:
     """
@@ -13,10 +14,7 @@ def load_positions(date: str) -> pd.DataFrame:
     """
     读取 scraper.py 生成的持仓 CSV。
     """
-    file_path = get_positions_file(date)
-
-    if not file_path.exists():
-        raise FileNotFoundError(f"找不到持仓文件：{file_path}")
+    file_path = ensure_positions_data(date)
 
     df = pd.read_csv(file_path)
 

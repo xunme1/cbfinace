@@ -8,6 +8,9 @@ from app.api.routes_signals import router as signals_router
 from app.api.routes_charts import router as charts_router
 from app.api.routes_products import router as products_router
 from app.api.routes_seat_tracker import router as seat_tracker_router
+from app.api.routes_data_refresh import router as data_refresh_router
+from app.api.routes_fund_flows import router as fund_flows_router
+from app.services.update_scheduler import start_update_scheduler
 
 
 app = FastAPI(
@@ -48,3 +51,10 @@ app.include_router(signals_router)
 app.include_router(charts_router)
 app.include_router(products_router)
 app.include_router(seat_tracker_router)
+app.include_router(data_refresh_router)
+app.include_router(fund_flows_router)
+
+
+@app.on_event("startup")
+def on_startup():
+    start_update_scheduler()

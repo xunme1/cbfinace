@@ -52,6 +52,25 @@
 - `/api/seat-tracker?date=2026-06-09` 可生成 71 个品种。
 - 新版席位追踪接口返回中不包含 `strength` 和 `exchange` 字段。
 
+## 2026-06-10：接入交易可查抓取与资金流排名
+
+### 新增
+
+- 后端集成交易可查持仓抓取逻辑。
+- 缺少 `positions_日期.csv` 时支持自动抓取。
+- 新增手动刷新接口：`POST /api/data/refresh`。
+- 新增资金流排名接口：`GET /api/fund-flows/rank`。
+- 新增单品种资金流详情接口：`GET /api/fund-flows/products/{product}`。
+- 新增前端资金流向页面：`/fund-flows`。
+- 新增轻量定时更新服务，可通过环境变量启用。
+
+### 配置
+
+- 登录态默认读取 `backend/auth.json`。
+- 可用 `JYKC_AUTH_FILE` 指定登录态路径。
+- 定时任务默认关闭，设置 `JYKC_SCHEDULER_ENABLED=true` 后启用。
+- 定时任务默认每天 `17:30` 抓取，可用 `JYKC_SCHEDULER_TIME` 修改。
+
 ## 2026-06-09：部署准备和数据更新
 
 ### 新增
