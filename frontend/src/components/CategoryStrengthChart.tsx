@@ -16,7 +16,7 @@ export default function CategoryStrengthChart({
   }
 
   if (!data || data.data.length === 0) {
-    return <Empty description="暂无板块强度数据" />;
+    return <Empty description="暂无板块变化数据" />;
   }
 
   const categories = data.data.map((item) => item.category);
@@ -38,7 +38,7 @@ export default function CategoryStrengthChart({
     },
     xAxis: {
       type: "value",
-      name: "强度",
+      name: "变化值",
     },
     yAxis: {
       type: "category",
@@ -46,7 +46,7 @@ export default function CategoryStrengthChart({
     },
     series: [
       {
-        name: "信号强度",
+        name: "板块变化值",
         type: "bar",
         data: values.reverse(),
         label: {

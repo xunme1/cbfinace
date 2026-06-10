@@ -391,9 +391,9 @@ export default function ProductDetail() {
               <Col xs={24} sm={12} lg={6}>
                 <Card>
                   <Statistic
-                    title="信号强度"
-                    value={data.matrix_summary.strength}
-                    precision={0}
+                    title="所属板块"
+                    value={data.category}
+                    valueStyle={{ fontSize: 24 }}
                   />
                 </Card>
               </Col>
@@ -401,8 +401,8 @@ export default function ProductDetail() {
               <Col xs={24} sm={12} lg={6}>
                 <Card>
                   <Statistic
-                    title="所属板块"
-                    value={data.category}
+                    title="信号类型"
+                    value={getSignalName(data.matrix_summary.signal_type)}
                     valueStyle={{ fontSize: 24 }}
                   />
                 </Card>
@@ -427,9 +427,6 @@ export default function ProductDetail() {
                 </Descriptions.Item>
                 <Descriptions.Item label="散户方向">
                   {data.matrix_summary.retail_direction}
-                </Descriptions.Item>
-                <Descriptions.Item label="信号强度">
-                  {formatNumber(data.matrix_summary.strength)}
                 </Descriptions.Item>
                 <Descriptions.Item label="信号说明" span={3}>
                   {data.matrix_summary.signal}

@@ -4,6 +4,7 @@ from app.services.product_service import (
     get_product_detail,
     search_products,
 )
+from app.services.product_analysis_service import get_product_dashboard
 
 router = APIRouter(prefix="/api", tags=["products"])
 
@@ -39,3 +40,21 @@ def product_detail(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取品种详情失败：{e}")
+
+
+@router.get("/products/{product}/dashboard")
+def product_dashboard(
+    product: str = Path(..., description="品种名称，例如 甲醇"),
+    date: str | None = Query(None, description="分析日期，例如 2026-06-09"),
+):
+    """
+    获取单个品种的席位持仓仪表盘数据。
+    """
+    try:
+        return get_product_dashboard(date=date, product=product)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"获取品种席位仪表盘失败：{e}")

@@ -7,6 +7,7 @@ from app.api.routes_dashboard import router as dashboard_router
 from app.api.routes_signals import router as signals_router
 from app.api.routes_charts import router as charts_router
 from app.api.routes_products import router as products_router
+from app.api.routes_seat_tracker import router as seat_tracker_router
 
 
 app = FastAPI(
@@ -46,3 +47,4 @@ app.include_router(dashboard_router)
 app.include_router(signals_router)
 app.include_router(charts_router)
 app.include_router(products_router)
+app.include_router(seat_tracker_router)

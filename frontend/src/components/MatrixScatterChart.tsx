@@ -62,8 +62,8 @@ export default function MatrixScatterChart({
       name: getSignalLabel(signalType),
       type: "scatter",
       symbolSize: (value: number[]) => {
-        const strength = value[2] || 0;
-        return Math.max(8, Math.min(32, Math.sqrt(strength) / 4));
+        const changeValue = value[2] || 0;
+        return Math.max(8, Math.min(32, Math.sqrt(changeValue) / 4));
       },
       data: items.map((item) => [
         item.x,
@@ -88,7 +88,7 @@ export default function MatrixScatterChart({
           `信号：${value[5]}`,
           `机构方向：${value[6]}，净变化 ${Number(value[0]).toLocaleString()}`,
           `散户方向：${value[7]}，净变化 ${Number(value[1]).toLocaleString()}`,
-          `强度：${Number(value[2]).toLocaleString()}`,
+          `变化值：${Number(value[2]).toLocaleString()}`,
         ].join("<br/>");
       },
     },

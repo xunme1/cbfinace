@@ -25,7 +25,7 @@ import MatrixScatterChart from "../components/MatrixScatterChart";
 const { Title, Paragraph } = Typography;
 
 export default function Dashboard() {
-  const [date, setDate] = useState("2026-03-27");
+  const [date, setDate] = useState("2026-06-09");
 
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [signalDistribution, setSignalDistribution] =
@@ -81,9 +81,9 @@ export default function Dashboard() {
     <div className="page">
       <Space direction="vertical" size={20} style={{ width: "100%" }}>
         <div>
-          <Title level={2}>交易可查持仓矩阵分析仪表盘</Title>
+          <Title level={2}>期货席位追踪仪表盘</Title>
           <Paragraph type="secondary">
-            基于席位持仓变化，观察机构阵营与散户阵营之间的对手盘、共振和突击信号。
+            基于席位持仓变化，观察重点品种、板块分布和五大席位的多空变化。
           </Paragraph>
         </div>
 
@@ -129,7 +129,7 @@ export default function Dashboard() {
               </Col>
 
               <Col xs={24} lg={14}>
-                <Card title="板块信号强度">
+                <Card title="板块信号分布">
                   <CategoryStrengthChart data={categoryStrength} />
                 </Card>
               </Col>
@@ -137,7 +137,7 @@ export default function Dashboard() {
 
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={12}>
-                <Card title="Top 品种信号强度">
+                <Card title="重点品种变化">
                   <TopProductsChart data={topProducts} />
                 </Card>
               </Col>
@@ -149,7 +149,7 @@ export default function Dashboard() {
               </Col>
             </Row>
 
-            <Card title="Top 信号强度表格">
+            <Card title="重点信号列表">
               <TopSignalTable data={dashboard.top_signals} date={date} />
             </Card>
           </>

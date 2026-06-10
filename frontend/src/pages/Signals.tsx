@@ -40,7 +40,7 @@ function getSignalName(signalType: string) {
 }
 
 export default function Signals() {
-  const [date, setDate] = useState("2026-03-27");
+  const [date, setDate] = useState("2026-06-09");
   const [signalType, setSignalType] = useState<string | undefined>();
   const [category, setCategory] = useState<string | undefined>();
   const [keyword, setKeyword] = useState("");
@@ -155,16 +155,6 @@ export default function Signals() {
       align: "right",
       width: 130,
       sorter: (a, b) => a.retail_net_change - b.retail_net_change,
-      render: (value: number) => value.toLocaleString(),
-    },
-    {
-      title: "强度",
-      dataIndex: "strength",
-      key: "strength",
-      align: "right",
-      width: 120,
-      defaultSortOrder: "descend",
-      sorter: (a, b) => a.strength - b.strength,
       render: (value: number) => value.toLocaleString(),
     },
     {

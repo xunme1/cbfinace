@@ -70,14 +70,6 @@ export default function TopSignalTable({ data, date = "2026-03-27" }: TopSignalT
       render: (value: number) => value.toLocaleString(),
     },
     {
-      title: "强度",
-      dataIndex: "strength",
-      key: "strength",
-      align: "right",
-      sorter: (a, b) => a.strength - b.strength,
-      render: (value: number) => value.toLocaleString(),
-    },
-    {
         title: "操作",
         key: "action",
         fixed: "right",

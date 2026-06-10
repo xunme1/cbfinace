@@ -1,12 +1,13 @@
 # 交易可查持仓矩阵分析系统
 
-一个用于分析期货持仓数据的前后端项目。系统从 `backend/data/positions_日期.csv` 读取席位持仓数据，在后端计算机构与散户的持仓变化矩阵，并在前端展示仪表盘、信号列表、品种详情和多种 ECharts 图表。
+一个用于追踪期货主力席位持仓变化的前后端项目。系统从 `backend/data/positions_日期.csv` 读取席位持仓数据，在后端按品种、合约、席位聚合多空变化，并在前端展示期货席位追踪列表、品种席位详情和相关图表。
 
 ## 功能概览
 
-- 仪表盘：展示信号总览、信号类型分布、板块信号强度、Top 品种和矩阵散点图。
-- 信号列表：支持按日期、信号类型、板块和关键词筛选。
-- 品种详情：查看单个品种的矩阵结论、席位贡献、合约汇总和合约明细。
+- 仪表盘：展示品种覆盖、信号分布、板块变化和重点品种。
+- 期货席位追踪：按日期、信号、板块和关键词筛选五大席位持仓变化。
+- 品种席位详情：查看单个品种的五大席位汇总、合约汇总、合约-席位明细和席位对峙分析。
+- 旧版信号列表：保留原机构 / 散户矩阵信号，用于兼容和对照。
 - 数据接口：FastAPI 提供仪表盘、信号、图表和品种相关 API。
 
 ## 技术栈
@@ -175,6 +176,8 @@ https://cbfinace-api.onrender.com
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | `GET` | `/api/dashboard?date=2026-03-27` | 获取仪表盘数据 |
+| `GET` | `/api/seat-tracker?date=2026-06-09` | 获取期货席位追踪列表 |
+| `GET` | `/api/seat-tracker/categories?date=2026-06-09` | 获取席位追踪板块列表 |
 | `GET` | `/api/signals?date=2026-03-27` | 获取信号列表 |
 | `GET` | `/api/signal-categories?date=2026-03-27` | 获取板块分类 |
 | `GET` | `/api/signal-types` | 获取信号类型 |
@@ -184,6 +187,9 @@ https://cbfinace-api.onrender.com
 | `GET` | `/api/charts/matrix-scatter?date=2026-03-27` | 获取矩阵散点图数据 |
 | `GET` | `/api/products?date=2026-03-27&keyword=化工` | 搜索品种 |
 | `GET` | `/api/products/{product}?date=2026-03-27` | 获取品种详情 |
+| `GET` | `/api/products/{product}/dashboard?date=2026-06-09` | 获取品种席位持仓详情 |
+
+席位追踪接口第一阶段只使用 CSV 中真实存在的 `category` 字段作为板块筛选，不使用交易所字段，也不返回 `strength` 或 `exchange` 字段。
 
 ## 常见问题
 
@@ -295,6 +301,33 @@ https://cbfinace.vercel.app
 - `VITE_API_BASE_URL` 是否指向实际后端域名。
 - `FRONTEND_ORIGINS` 是否包含实际前端域名。
 - `backend/data` 是否包含查询日期对应的 `positions_YYYY-MM-DD.csv`。
+
+### 5. 服务器更新项目
+
+如果前后端都部署在云服务器上，拉取最新代码后执行：
+
+```bash
+cd /root/cbfinace
+git pull
+
+sudo systemctl restart cbfinace-api
+
+cd /root/cbfinace/frontend
+npm run build
+sudo rm -rf /var/www/cbfinace/*
+sudo cp -r dist/* /var/www/cbfinace/
+sudo chown -R www-data:www-data /var/www/cbfinace
+sudo sed -i 's/ crossorigin//g' /var/www/cbfinace/index.html
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+更新后访问：
+
+```text
+http://服务器公网IP/seat-tracker
+http://服务器公网IP/products/甲醇?date=2026-06-09
+```
 
 ## 开发建议
 

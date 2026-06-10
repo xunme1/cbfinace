@@ -34,7 +34,7 @@ export default function TopProductsChart({
         return [
           `${raw.product}（${raw.category}）`,
           `信号：${raw.signal}`,
-          `强度：${raw.strength.toLocaleString()}`,
+          `变化值：${raw.strength.toLocaleString()}`,
           `机构净变化：${raw.institution_net_change.toLocaleString()}`,
           `散户净变化：${raw.retail_net_change.toLocaleString()}`,
         ].join("<br/>");
@@ -48,7 +48,7 @@ export default function TopProductsChart({
     },
     xAxis: {
       type: "value",
-      name: "强度",
+      name: "变化值",
     },
     yAxis: {
       type: "category",
@@ -56,7 +56,7 @@ export default function TopProductsChart({
     },
     series: [
       {
-        name: "信号强度",
+        name: "重点变化",
         type: "bar",
         data: reversed.map((item) => item.strength),
         label: {
