@@ -1,7 +1,6 @@
 import { apiClient } from "./client";
 import type {
   SignalDistributionResponse,
-  CategoryStrengthResponse,
   TopProductsResponse,
   MatrixScatterResponse,
 } from "../types/charts";
@@ -19,27 +18,15 @@ export async function fetchSignalDistribution(
   return response.data;
 }
 
-export async function fetchCategoryStrength(
-  date: string
-): Promise<CategoryStrengthResponse> {
-  const response = await apiClient.get<CategoryStrengthResponse>(
-    "/api/charts/category-strength",
-    {
-      params: { date },
-    }
-  );
-
-  return response.data;
-}
-
 export async function fetchTopProducts(
   date: string,
-  limit = 10
+  limit = 10,
+  signalType?: string
 ): Promise<TopProductsResponse> {
   const response = await apiClient.get<TopProductsResponse>(
     "/api/charts/top-products",
     {
-      params: { date, limit },
+      params: { date, limit, signal_type: signalType || undefined },
     }
   );
 

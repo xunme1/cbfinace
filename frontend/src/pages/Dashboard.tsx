@@ -1,37 +1,34 @@
 import { useEffect, useState } from "react";
-import { Alert, Card, Col, DatePicker, Row, Space, Spin, Typography } from "antd";
+import { Alert, Button, Card, Col, DatePicker, Row, Space, Spin, Typography } from "antd";
+import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import type { DashboardData } from "../types/dashboard";
 import type {
   SignalDistributionResponse,
-  CategoryStrengthResponse,
   TopProductsResponse,
   MatrixScatterResponse,
 } from "../types/charts";
 import { fetchDashboard } from "../api/client";
 import {
   fetchSignalDistribution,
-  fetchCategoryStrength,
   fetchTopProducts,
   fetchMatrixScatter,
 } from "../api/chartApi";
 import SummaryCards from "../components/SummaryCards";
 import TopSignalTable from "../components/TopSignalTable";
 import SignalPieChart from "../components/SignalPieChart";
-import CategoryStrengthChart from "../components/CategoryStrengthChart";
 import TopProductsChart from "../components/TopProductsChart";
 import MatrixScatterChart from "../components/MatrixScatterChart";
 
 const { Title, Paragraph } = Typography;
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [date, setDate] = useState("2026-06-09");
 
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [signalDistribution, setSignalDistribution] =
     useState<SignalDistributionResponse | null>(null);
-  const [categoryStrength, setCategoryStrength] =
-    useState<CategoryStrengthResponse | null>(null);
   const [topProducts, setTopProducts] = useState<TopProductsResponse | null>(null);
   const [matrixScatter, setMatrixScatter] =
     useState<MatrixScatterResponse | null>(null);
@@ -47,20 +44,17 @@ export default function Dashboard() {
       const [
         dashboardData,
         signalDistributionData,
-        categoryStrengthData,
         topProductsData,
         matrixScatterData,
       ] = await Promise.all([
         fetchDashboard(targetDate),
         fetchSignalDistribution(targetDate),
-        fetchCategoryStrength(targetDate),
-        fetchTopProducts(targetDate, 10),
+        fetchTopProducts(targetDate, 10, "opponent"),
         fetchMatrixScatter(targetDate),
       ]);
 
       setDashboard(dashboardData);
       setSignalDistribution(signalDistributionData);
-      setCategoryStrength(categoryStrengthData);
       setTopProducts(topProductsData);
       setMatrixScatter(matrixScatterData);
     } catch (error) {
@@ -77,14 +71,23 @@ export default function Dashboard() {
     loadData(date);
   }, [date]);
 
+  function openProductDetail(product: string) {
+    navigate(`/products/${encodeURIComponent(product)}?date=${date}`);
+  }
+
   return (
     <div className="page">
       <Space direction="vertical" size={20} style={{ width: "100%" }}>
-        <div>
-          <Title level={2}>期货席位追踪仪表盘</Title>
-          <Paragraph type="secondary">
-            基于席位持仓变化，观察重点品种、板块分布和五大席位的多空变化。
-          </Paragraph>
+        <div className="page-title-row">
+          <div>
+            <Title level={2}>期货席位追踪仪表盘</Title>
+            <Paragraph type="secondary">
+              基于席位持仓变化，重点观察机构与散户方向相反的品种。
+            </Paragraph>
+          </div>
+          <Button type="primary" onClick={() => navigate("/guide")}>
+            介绍文档
+          </Button>
         </div>
 
         <Card>
@@ -123,28 +126,28 @@ export default function Dashboard() {
 
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={10}>
-                <Card title="信号类型分布">
+                <Card title="信号类型分布" className="dashboard-chart-card">
                   <SignalPieChart data={signalDistribution} />
                 </Card>
               </Col>
 
               <Col xs={24} lg={14}>
-                <Card title="板块信号分布">
-                  <CategoryStrengthChart data={categoryStrength} />
+                <Card title="重点对手盘品种" className="dashboard-chart-card">
+                  <TopProductsChart
+                    data={topProducts}
+                    onProductClick={openProductDetail}
+                  />
                 </Card>
               </Col>
             </Row>
 
             <Row gutter={[16, 16]}>
-              <Col xs={24} lg={12}>
-                <Card title="重点品种变化">
-                  <TopProductsChart data={topProducts} />
-                </Card>
-              </Col>
-
-              <Col xs={24} lg={12}>
+              <Col span={24}>
                 <Card title="机构 vs 散户矩阵">
-                  <MatrixScatterChart data={matrixScatter} />
+                  <MatrixScatterChart
+                    data={matrixScatter}
+                    onProductClick={openProductDetail}
+                  />
                 </Card>
               </Col>
             </Row>

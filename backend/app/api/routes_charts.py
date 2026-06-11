@@ -45,12 +45,13 @@ def category_strength(
 def top_products(
     date: str = Query(..., description="分析日期，例如 2026-03-27"),
     limit: int = Query(10, ge=1, le=50, description="返回 Top N 品种"),
+    signal_type: str | None = Query(None, description="信号类型，例如 opponent"),
 ):
     """
     Top 品种信号强度柱状图数据。
     """
     try:
-        return get_top_products(date=date, limit=limit)
+        return get_top_products(date=date, limit=limit, signal_type=signal_type)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:

@@ -27,6 +27,21 @@
   margin: 0 auto;
 }
 
+.page-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dashboard-chart-card {
+  height: 100%;
+}
+
+.dashboard-chart-card .ant-card-body {
+  height: 460px;
+}
+
 .draggable-table .ant-table-body,
 .draggable-table .ant-table-content {
   cursor: grab;
@@ -36,4 +51,11 @@
 .draggable-table .ant-table-content.is-dragging {
   cursor: grabbing;
   user-select: none;
+}
+
+@media (max-width: 768px) {
+  .page-title-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }

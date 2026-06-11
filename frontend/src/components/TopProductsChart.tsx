@@ -5,18 +5,20 @@ import type { TopProductsResponse } from "../types/charts";
 interface TopProductsChartProps {
   data: TopProductsResponse | null;
   loading?: boolean;
+  onProductClick?: (product: string) => void;
 }
 
 export default function TopProductsChart({
   data,
   loading = false,
+  onProductClick,
 }: TopProductsChartProps) {
   if (loading) {
     return <Spin />;
   }
 
   if (!data || data.data.length === 0) {
-    return <Empty description="暂无 Top 品种数据" />;
+    return <Empty description="暂无对手盘重点品种" />;
   }
 
   const reversed = [...data.data].reverse();
@@ -56,9 +58,13 @@ export default function TopProductsChart({
     },
     series: [
       {
-        name: "重点变化",
+        name: "对手盘变化",
         type: "bar",
         data: reversed.map((item) => item.strength),
+        itemStyle: {
+          color: "#f5222d",
+          borderRadius: [0, 4, 4, 0],
+        },
         label: {
           show: true,
           position: "right",
@@ -68,5 +74,19 @@ export default function TopProductsChart({
     ],
   };
 
-  return <ReactECharts option={option} style={{ height: 420 }} />;
+  return (
+    <ReactECharts
+      option={option}
+      style={{ height: 420 }}
+      onEvents={{
+        click: (params: any) => {
+          const raw = reversed[params.dataIndex];
+
+          if (raw && onProductClick) {
+            onProductClick(raw.product);
+          }
+        },
+      }}
+    />
+  );
 }

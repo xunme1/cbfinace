@@ -99,7 +99,11 @@ def get_category_strength(date: str) -> dict[str, Any]:
     }
 
 
-def get_top_products(date: str, limit: int = 10) -> dict[str, Any]:
+def get_top_products(
+    date: str,
+    limit: int = 10,
+    signal_type: str | None = None,
+) -> dict[str, Any]:
     """
     Top 品种强度排名。
 
@@ -107,6 +111,13 @@ def get_top_products(date: str, limit: int = 10) -> dict[str, Any]:
     适合前端画横向柱状图。
     """
     signals = load_signals(date)
+
+    if signal_type:
+        signals = [
+            item
+            for item in signals
+            if item.get("signal_type") == signal_type
+        ]
 
     signals = sorted(
         signals,
