@@ -14,6 +14,7 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import { fetchFundFlowRank } from "../api/fundFlowApi";
+import { useDragScroll } from "../hooks/useDragScroll";
 import type { FundFlowRankItem, FundFlowRankResponse } from "../types/fundFlow";
 
 const { Title, Paragraph } = Typography;
@@ -39,6 +40,8 @@ function getValueColor(value: number) {
 }
 
 export default function FundFlows() {
+  const inflowTableDrag = useDragScroll();
+  const outflowTableDrag = useDragScroll();
   const [date, setDate] = useState("2026-03-27");
   const [data, setData] = useState<FundFlowRankResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -67,7 +70,9 @@ export default function FundFlows() {
       dataIndex: "product",
       key: "product",
       render: (value: string) => (
-        <Link to={`/products/${encodeURIComponent(value)}?date=${date}`}>{value}</Link>
+        <Link to={`/fund-flows/products/${encodeURIComponent(value)}?date=${date}`}>
+          {value}
+        </Link>
       ),
     },
     {
@@ -139,25 +144,29 @@ export default function FundFlows() {
           <Row gutter={[16, 16]}>
             <Col xs={24} lg={12}>
               <Card title="资金流入 Top 5">
-                <Table
-                  rowKey={(record) => `in-${record.product}`}
-                  columns={columns}
-                  dataSource={data.top_inflows}
-                  pagination={false}
-                  scroll={{ x: 760 }}
-                />
+                <div className="draggable-table" {...inflowTableDrag}>
+                  <Table
+                    rowKey={(record) => `in-${record.product}`}
+                    columns={columns}
+                    dataSource={data.top_inflows}
+                    pagination={false}
+                    scroll={{ x: 760 }}
+                  />
+                </div>
               </Card>
             </Col>
 
             <Col xs={24} lg={12}>
               <Card title="资金流出 Top 5">
-                <Table
-                  rowKey={(record) => `out-${record.product}`}
-                  columns={columns}
-                  dataSource={data.top_outflows}
-                  pagination={false}
-                  scroll={{ x: 760 }}
-                />
+                <div className="draggable-table" {...outflowTableDrag}>
+                  <Table
+                    rowKey={(record) => `out-${record.product}`}
+                    columns={columns}
+                    dataSource={data.top_outflows}
+                    pagination={false}
+                    scroll={{ x: 760 }}
+                  />
+                </div>
               </Card>
             </Col>
           </Row>

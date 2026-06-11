@@ -14,6 +14,17 @@ TRACKED_BROKERS = [
     "徽商期货",
 ]
 
+CORE_BROKERS = [
+    "高盛期货",
+    "摩根大通",
+    "国泰君安",
+]
+
+RETAIL_BROKERS = [
+    "东方财富",
+    "徽商期货",
+]
+
 SIGNAL_LABELS = {
     "strong_long": "强看多",
     "strong_short": "强看空",
@@ -181,22 +192,58 @@ def classify_signal(
     broker_summary: list[dict[str, Any]],
     contract_summary: list[dict[str, Any]],
 ) -> tuple[str, str]:
-    long_count = sum(1 for item in broker_summary if item["direction"] == "long")
-    short_count = sum(1 for item in broker_summary if item["direction"] == "short")
+    core_items = [
+        item
+        for item in broker_summary
+        if item["broker"] in CORE_BROKERS
+    ]
+    retail_items = [
+        item
+        for item in broker_summary
+        if item["broker"] in RETAIL_BROKERS
+    ]
 
-    if long_count >= 3 and short_count <= 1:
+    core_long_count = sum(1 for item in core_items if item["direction"] == "long")
+    core_short_count = sum(1 for item in core_items if item["direction"] == "short")
+    retail_long_count = sum(1 for item in retail_items if item["direction"] == "long")
+    retail_short_count = sum(1 for item in retail_items if item["direction"] == "short")
+
+    core_net_change = sum(item["net_change"] for item in core_items)
+    retail_net_change = sum(item["net_change"] for item in retail_items)
+
+    core_direction = get_direction(core_net_change)
+    retail_direction = get_direction(retail_net_change)
+
+    if (
+        core_long_count >= 2
+        and retail_short_count >= 1
+        and core_direction == "long"
+        and retail_direction == "short"
+    ):
         return "strong_long", SIGNAL_LABELS["strong_long"]
 
-    if short_count >= 3 and long_count <= 1:
+    if (
+        core_short_count >= 2
+        and retail_long_count >= 1
+        and core_direction == "short"
+        and retail_direction == "long"
+    ):
         return "strong_short", SIGNAL_LABELS["strong_short"]
 
-    if long_count >= 2 and short_count >= 2:
+    if (
+        core_direction != "neutral"
+        and retail_direction != "neutral"
+        and core_direction != retail_direction
+    ):
         return "conflict", SIGNAL_LABELS["conflict"]
 
     total_net_change = sum(item["net_change"] for item in contract_summary)
     total_direction = get_direction(total_net_change)
     main_contract, _ = get_main_and_second_contract(contract_summary)
     main_direction = main_contract["direction"] if main_contract else "neutral"
+
+    if core_direction != "neutral" and retail_direction == core_direction:
+        return "positive", SIGNAL_LABELS["positive"]
 
     if total_direction != "neutral" and main_direction == total_direction:
         return "positive", SIGNAL_LABELS["positive"]

@@ -18,6 +18,7 @@ import {
   fetchSeatTracker,
   fetchSeatTrackerCategories,
 } from "../api/seatTrackerApi";
+import { useDragScroll } from "../hooks/useDragScroll";
 import type { BrokerChange, SeatTrackerItem } from "../types/seatTracker";
 
 const { Title, Paragraph } = Typography;
@@ -73,6 +74,7 @@ function findBrokerChange(item: SeatTrackerItem, broker: string): BrokerChange {
 }
 
 export default function SeatTracker() {
+  const dragScrollHandlers = useDragScroll();
   const [date, setDate] = useState("2026-06-09");
   const [signal, setSignal] = useState("");
   const [category, setCategory] = useState("");
@@ -236,7 +238,7 @@ export default function SeatTracker() {
         <div>
           <Title level={2}>期货席位追踪</Title>
           <Paragraph type="secondary">
-            聚焦五大席位在各品种、各合约上的多空变化，识别偏多、偏空和席位对峙。
+            聚焦三大主力席位与两大散户席位的反向结构，并保留五大席位明细。
           </Paragraph>
         </div>
 
@@ -307,19 +309,21 @@ export default function SeatTracker() {
         )}
 
         <Card title={`席位追踪列表：共 ${total} 个品种`}>
-          <Table
-            rowKey={(record) => `${record.category}-${record.product}`}
-            columns={columns}
-            dataSource={items}
-            loading={loading}
-            pagination={{
-              pageSize: 20,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (count) => `共 ${count} 个品种`,
-            }}
-            scroll={{ x: 1700 }}
-          />
+          <div className="draggable-table" {...dragScrollHandlers}>
+            <Table
+              rowKey={(record) => `${record.category}-${record.product}`}
+              columns={columns}
+              dataSource={items}
+              loading={loading}
+              pagination={{
+                pageSize: 20,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (count) => `共 ${count} 个品种`,
+              }}
+              scroll={{ x: 1700 }}
+            />
+          </div>
         </Card>
       </Space>
     </div>

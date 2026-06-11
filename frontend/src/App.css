@@ -26,3 +26,14 @@
   max-width: 1400px;
   margin: 0 auto;
 }
+
+.draggable-table .ant-table-body,
+.draggable-table .ant-table-content {
+  cursor: grab;
+}
+
+.draggable-table .ant-table-body.is-dragging,
+.draggable-table .ant-table-content.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}

@@ -1,6 +1,8 @@
 from typing import Any
 
 from app.services.seat_tracker_service import (
+    CORE_BROKERS,
+    RETAIL_BROKERS,
     TRACKED_BROKERS,
     build_seat_tracker,
     classify_signal,
@@ -45,16 +47,35 @@ def get_product_contract_broker_detail(date: str | None, product: str) -> list[d
 
 
 def detect_broker_conflict(broker_summary: list[dict[str, Any]]) -> bool:
-    long_count = sum(1 for item in broker_summary if item["direction"] == "long")
-    short_count = sum(1 for item in broker_summary if item["direction"] == "short")
+    core_direction = get_group_direction(broker_summary, CORE_BROKERS)
+    retail_direction = get_group_direction(broker_summary, RETAIL_BROKERS)
 
-    return long_count >= 2 and short_count >= 2
+    return (
+        core_direction != "neutral"
+        and retail_direction != "neutral"
+        and core_direction != retail_direction
+    )
+
+
+def get_group_direction(
+    broker_summary: list[dict[str, Any]],
+    brokers: list[str],
+) -> str:
+    net_change = sum(
+        item["net_change"]
+        for item in broker_summary
+        if item["broker"] in brokers
+    )
+
+    return get_direction(net_change)
 
 
 def build_product_description(
     broker_summary: list[dict[str, Any]],
     has_conflict: bool,
 ) -> str:
+    core_direction = get_group_direction(broker_summary, CORE_BROKERS)
+    retail_direction = get_group_direction(broker_summary, RETAIL_BROKERS)
     long_brokers = [
         item["broker"]
         for item in broker_summary
@@ -67,18 +88,30 @@ def build_product_description(
     ]
 
     if has_conflict:
+        core_direction_cn = "偏多" if core_direction == "long" else "偏空"
+        retail_direction_cn = "偏多" if retail_direction == "long" else "偏空"
+
         return (
-            f"{'、'.join(long_brokers)}偏多；{'、'.join(short_brokers)}偏空，"
-            "主力席位之间存在明显对峙。"
+            f"主力席位（{'、'.join(CORE_BROKERS)}）整体{core_direction_cn}；"
+            f"散户席位（{'、'.join(RETAIL_BROKERS)}）整体{retail_direction_cn}，"
+            "形成主力与散户的反向结构。"
+        )
+
+    if core_direction != "neutral" and retail_direction == core_direction:
+        direction_cn = "偏多" if core_direction == "long" else "偏空"
+
+        return (
+            f"主力席位与散户席位同时{direction_cn}，属于同向结构，"
+            "方向一致但缺少反向确认，不作为强信号。"
         )
 
     if long_brokers and not short_brokers:
-        return f"{'、'.join(long_brokers)}偏多，五大席位整体方向偏多。"
+        return f"{'、'.join(long_brokers)}偏多，但主力与散户未形成明确反向结构。"
 
     if short_brokers and not long_brokers:
-        return f"{'、'.join(short_brokers)}偏空，五大席位整体方向偏空。"
+        return f"{'、'.join(short_brokers)}偏空，但主力与散户未形成明确反向结构。"
 
-    return "五大席位整体方向较一致，暂未出现明显对峙。"
+    return "主力席位与散户席位暂未形成明确反向结构。"
 
 
 def get_product_dashboard(date: str | None, product: str) -> dict[str, Any]:

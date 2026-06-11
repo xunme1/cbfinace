@@ -5,6 +5,7 @@ import Signals from "./pages/Signals";
 import SeatTracker from "./pages/SeatTracker";
 import ProductDashboard from "./pages/ProductDashboard";
 import FundFlows from "./pages/FundFlows";
+import FundFlowProductDetail from "./pages/FundFlowProductDetail";
 import "./App.css";
 
 const { Header, Content } = Layout;
@@ -56,6 +57,7 @@ function AppShell() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/seat-tracker" element={<SeatTracker />} />
           <Route path="/fund-flows" element={<FundFlows />} />
+          <Route path="/fund-flows/products/:product" element={<FundFlowProductDetail />} />
           <Route path="/signals" element={<Signals />} />
           <Route path="/products/:product" element={<ProductDashboard />} />
         </Routes>

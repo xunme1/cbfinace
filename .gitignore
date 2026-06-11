@@ -44,6 +44,9 @@ Thumbs.db
 .cache/
 .parcel-cache/
 
+# Local notes
+更新日志与信号说明.txt
+
 # Scraper sensitive/debug artifacts
 jykc_scraper/
 jykc_scraper/scripts/auth.json
