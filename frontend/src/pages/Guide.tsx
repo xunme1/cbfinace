@@ -22,6 +22,16 @@ const moduleRows = [
     description: "按日期、板块、信号和关键词筛选五大席位在各品种上的持仓变化。",
   },
   {
+    module: "席位对对碰",
+    path: "/seat-battle",
+    description: "自由选择两个席位阵营，比较它们在各品种和各合约上的持仓变化。",
+  },
+  {
+    module: "历史趋势",
+    path: "/trends",
+    description: "查看品种最近多个交易日的信号连续性、主力/散户方向和累计变化。",
+  },
+  {
     module: "资金流向",
     path: "/fund-flows",
     description: "查看五大席位资金流入、流出排名，并可进入单品种资金流详情。",

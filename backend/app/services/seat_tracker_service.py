@@ -107,12 +107,23 @@ def get_product_broker_summary(df: pd.DataFrame, product: str) -> list[dict[str,
     grouped = (
         product_df.groupby("broker", as_index=False)
         .agg(
+            long_position=("long_position", "sum"),
             long_change=("long_change", "sum"),
+            short_position=("short_position", "sum"),
             short_change=("short_change", "sum"),
             net_change=("net_change", "sum"),
         )
         if not product_df.empty
-        else pd.DataFrame(columns=["broker", "long_change", "short_change", "net_change"])
+        else pd.DataFrame(
+            columns=[
+                "broker",
+                "long_position",
+                "long_change",
+                "short_position",
+                "short_change",
+                "net_change",
+            ]
+        )
     )
 
     broker_map = {
@@ -125,14 +136,18 @@ def get_product_broker_summary(df: pd.DataFrame, product: str) -> list[dict[str,
     for broker in TRACKED_BROKERS:
         row = broker_map.get(broker)
 
+        long_position = float(row["long_position"]) if row is not None else 0
         long_change = float(row["long_change"]) if row is not None else 0
+        short_position = float(row["short_position"]) if row is not None else 0
         short_change = float(row["short_change"]) if row is not None else 0
         net_change = float(row["net_change"]) if row is not None else 0
 
         result.append(
             {
                 "broker": broker,
+                "long_position": int(long_position),
                 "long_change": int(long_change),
+                "short_position": int(short_position),
                 "short_change": int(short_change),
                 "net_change": int(net_change),
                 "direction": get_direction(net_change),
@@ -152,7 +167,9 @@ def get_product_contract_summary(df: pd.DataFrame, product: str) -> list[dict[st
     grouped = (
         product_df.groupby("contract", as_index=False)
         .agg(
+            long_position=("long_position", "sum"),
             long_change=("long_change", "sum"),
+            short_position=("short_position", "sum"),
             short_change=("short_change", "sum"),
             net_change=("net_change", "sum"),
         )
@@ -168,7 +185,9 @@ def get_product_contract_summary(df: pd.DataFrame, product: str) -> list[dict[st
         result.append(
             {
                 "contract": str(row["contract"]),
+                "long_position": int(row["long_position"]),
                 "long_change": int(row["long_change"]),
+                "short_position": int(row["short_position"]),
                 "short_change": int(row["short_change"]),
                 "net_change": int(net_change),
                 "direction": get_direction(net_change),

@@ -3,6 +3,10 @@ import { BrowserRouter, Link, Route, Routes, useLocation } from "react-router-do
 import Dashboard from "./pages/Dashboard";
 import Signals from "./pages/Signals";
 import SeatTracker from "./pages/SeatTracker";
+import SeatBattle from "./pages/SeatBattle";
+import SeatBattleProductDetail from "./pages/SeatBattleProductDetail";
+import Trends from "./pages/Trends";
+import TrendProductDetail from "./pages/TrendProductDetail";
 import ProductDashboard from "./pages/ProductDashboard";
 import FundFlows from "./pages/FundFlows";
 import FundFlowProductDetail from "./pages/FundFlowProductDetail";
@@ -18,6 +22,10 @@ function AppShell() {
     ? "/signals"
     : location.pathname.startsWith("/seat-tracker")
     ? "/seat-tracker"
+    : location.pathname.startsWith("/seat-battle")
+    ? "/seat-battle"
+    : location.pathname.startsWith("/trends")
+    ? "/trends"
     : location.pathname.startsWith("/fund-flows")
     ? "/fund-flows"
     : "/";
@@ -42,6 +50,14 @@ function AppShell() {
               label: <Link to="/seat-tracker">席位追踪</Link>,
             },
             {
+              key: "/seat-battle",
+              label: <Link to="/seat-battle">席位对对碰</Link>,
+            },
+            {
+              key: "/trends",
+              label: <Link to="/trends">历史趋势</Link>,
+            },
+            {
               key: "/fund-flows",
               label: <Link to="/fund-flows">资金流向</Link>,
             },
@@ -57,6 +73,10 @@ function AppShell() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/seat-tracker" element={<SeatTracker />} />
+          <Route path="/seat-battle" element={<SeatBattle />} />
+          <Route path="/seat-battle/products/:product" element={<SeatBattleProductDetail />} />
+          <Route path="/trends" element={<Trends />} />
+          <Route path="/trends/:product" element={<TrendProductDetail />} />
           <Route path="/fund-flows" element={<FundFlows />} />
           <Route path="/fund-flows/products/:product" element={<FundFlowProductDetail />} />
           <Route path="/guide" element={<Guide />} />

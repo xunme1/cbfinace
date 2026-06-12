@@ -1,6 +1,8 @@
 export interface BrokerChange {
   broker: string;
+  long_position: number;
   long_change: number;
+  short_position: number;
   short_change: number;
   net_change: number;
   direction: "long" | "short" | "neutral";

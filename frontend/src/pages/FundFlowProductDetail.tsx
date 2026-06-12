@@ -52,6 +52,28 @@ function getValueColor(value: number) {
   return "#6b7280";
 }
 
+function formatChange(value: number) {
+  if (value > 0) return `+${formatNumber(value)}`;
+  return formatNumber(value);
+}
+
+function PositionChange({
+  position,
+  change,
+}: {
+  position: number;
+  change: number;
+}) {
+  return (
+    <span>
+      {formatNumber(position)}
+      <span style={{ color: getValueColor(change) }}>
+        （{formatChange(change)}）
+      </span>
+    </span>
+  );
+}
+
 function getSignalColor(signal: string) {
   if (signal === "strong_long") return "red";
   if (signal === "strong_short") return "green";
@@ -221,18 +243,26 @@ export default function FundFlowProductDetail() {
   const brokerColumns: ColumnsType<BrokerChange> = [
     { title: "席位", dataIndex: "broker", key: "broker" },
     {
-      title: "多头变化",
-      dataIndex: "long_change",
-      key: "long_change",
+      title: "多头",
+      key: "long",
       align: "right",
-      render: formatNumber,
+      render: (_, record) => (
+        <PositionChange
+          position={record.long_position}
+          change={record.long_change}
+        />
+      ),
     },
     {
-      title: "空头变化",
-      dataIndex: "short_change",
-      key: "short_change",
+      title: "空头",
+      key: "short",
       align: "right",
-      render: formatNumber,
+      render: (_, record) => (
+        <PositionChange
+          position={record.short_position}
+          change={record.short_change}
+        />
+      ),
     },
     {
       title: "持仓净变化",
@@ -257,20 +287,28 @@ export default function FundFlowProductDetail() {
   const contractColumns: ColumnsType<ContractSummary> = [
     { title: "合约", dataIndex: "contract", key: "contract", fixed: "left", width: 110 },
     {
-      title: "多头变化",
-      dataIndex: "long_change",
-      key: "long_change",
+      title: "多头",
+      key: "long",
       align: "right",
       width: 130,
-      render: formatNumber,
+      render: (_, record) => (
+        <PositionChange
+          position={record.long_position}
+          change={record.long_change}
+        />
+      ),
     },
     {
-      title: "空头变化",
-      dataIndex: "short_change",
-      key: "short_change",
+      title: "空头",
+      key: "short",
       align: "right",
       width: 130,
-      render: formatNumber,
+      render: (_, record) => (
+        <PositionChange
+          position={record.short_position}
+          change={record.short_change}
+        />
+      ),
     },
     {
       title: "持仓净变化",

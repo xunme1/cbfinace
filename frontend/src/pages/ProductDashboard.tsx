@@ -26,6 +26,19 @@ import type { BrokerChange } from "../types/seatTracker";
 
 const { Title, Paragraph } = Typography;
 
+const LONG_POSITION_COLOR = "#f6b08f";
+const LONG_INCREASE_COLOR = "#e76f51";
+const LONG_DECREASE_COLOR = "#fbd1bd";
+const SHORT_POSITION_COLOR = "#8ecae6";
+const SHORT_INCREASE_COLOR = "#277da1";
+const SHORT_DECREASE_COLOR = "#c7e8f6";
+const POSITION_CHART_COLORS = [
+  LONG_POSITION_COLOR,
+  LONG_INCREASE_COLOR,
+  SHORT_POSITION_COLOR,
+  SHORT_INCREASE_COLOR,
+];
+
 function formatNumber(value: number) {
   return value.toLocaleString();
 }
@@ -43,6 +56,52 @@ function getNumberColor(value: number) {
   if (value > 0) return "#cf1322";
   if (value < 0) return "#389e0d";
   return "#6b7280";
+}
+
+function formatChange(value: number) {
+  if (value > 0) return `+${formatNumber(value)}`;
+  return formatNumber(value);
+}
+
+function PositionChange({
+  position,
+  change,
+}: {
+  position: number;
+  change: number;
+}) {
+  return (
+    <span>
+      {formatNumber(position)}
+      <span style={{ color: getNumberColor(change) }}>
+        （{formatChange(change)}）
+      </span>
+    </span>
+  );
+}
+
+function buildPositionBarData(position: number, change: number) {
+  const absChange = Math.abs(change);
+
+  if (change > 0) {
+    return {
+      base: Math.max(position - absChange, 0),
+      change: absChange,
+    };
+  }
+
+  return {
+    base: position,
+    change: absChange,
+  };
+}
+
+function getLongChangeColor(change: number) {
+  return change >= 0 ? LONG_INCREASE_COLOR : LONG_DECREASE_COLOR;
+}
+
+function getShortChangeColor(change: number) {
+  return change >= 0 ? SHORT_INCREASE_COLOR : SHORT_DECREASE_COLOR;
 }
 
 function DirectionTag({ direction, label }: { direction: string; label: string }) {
@@ -89,23 +148,86 @@ export default function ProductDashboard() {
   const brokerChartOption = useMemo(() => {
     if (!data) return null;
 
+    const chartData = [...data.broker_summary].reverse();
+    const longBars = chartData.map((item) =>
+      buildPositionBarData(item.long_position, item.long_change)
+    );
+    const shortBars = chartData.map((item) =>
+      buildPositionBarData(item.short_position, item.short_change)
+    );
+
     return {
-      tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+      color: POSITION_CHART_COLORS,
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (params: any) => {
+          const raw = chartData[params[0].dataIndex];
+
+          return [
+            raw.broker,
+            `多头持仓：${formatNumber(raw.long_position)}（${formatChange(raw.long_change)}）`,
+            `空头持仓：${formatNumber(raw.short_position)}（${formatChange(raw.short_change)}）`,
+            `多头变化：${formatChange(raw.long_change)}`,
+            `空头变化：${formatChange(raw.short_change)}`,
+            `多空净变化：${formatChange(raw.net_change)}`,
+          ].join("<br/>");
+        },
+      },
+      legend: { show: false },
       grid: { left: 90, right: 32, top: 24, bottom: 32 },
-      xAxis: { type: "value", name: "净变化" },
+      xAxis: { type: "value", name: "持仓量" },
       yAxis: {
         type: "category",
-        data: [...data.broker_summary].reverse().map((item) => item.broker),
+        data: chartData.map((item) => item.broker),
       },
       series: [
         {
-          name: "席位净变化",
+          name: "多头持仓",
           type: "bar",
-          data: [...data.broker_summary].reverse().map((item) => item.net_change),
+          stack: "long",
+          data: longBars.map((item) => item.base),
+          itemStyle: { color: LONG_POSITION_COLOR },
+        },
+        {
+          name: "多头增减",
+          type: "bar",
+          stack: "long",
+          data: longBars.map((item) => item.change),
+          itemStyle: {
+            color: (params: any) => getLongChangeColor(chartData[params.dataIndex].long_change),
+          },
           label: {
             show: true,
             position: "right",
-            formatter: (params: any) => Number(params.value).toLocaleString(),
+            formatter: (params: any) => {
+              const raw = chartData[params.dataIndex];
+              return `${formatNumber(raw.long_position)}（${formatChange(raw.long_change)}）`;
+            },
+          },
+        },
+        {
+          name: "空头持仓",
+          type: "bar",
+          stack: "short",
+          data: shortBars.map((item) => item.base),
+          itemStyle: { color: SHORT_POSITION_COLOR },
+        },
+        {
+          name: "空头增减",
+          type: "bar",
+          stack: "short",
+          data: shortBars.map((item) => item.change),
+          itemStyle: {
+            color: (params: any) => getShortChangeColor(chartData[params.dataIndex].short_change),
+          },
+          label: {
+            show: true,
+            position: "right",
+            formatter: (params: any) => {
+              const raw = chartData[params.dataIndex];
+              return `${formatNumber(raw.short_position)}（${formatChange(raw.short_change)}）`;
+            },
           },
         },
       ],
@@ -116,9 +238,155 @@ export default function ProductDashboard() {
     if (!data) return null;
 
     const chartData = [...data.contract_summary].slice(0, 10).reverse();
+    const longBars = chartData.map((item) =>
+      buildPositionBarData(item.long_position, item.long_change)
+    );
+    const shortBars = chartData.map((item) =>
+      buildPositionBarData(item.short_position, item.short_change)
+    );
 
     return {
-      tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+      color: POSITION_CHART_COLORS,
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (params: any) => {
+          const raw = chartData[params[0].dataIndex];
+
+          return [
+            raw.contract,
+            `多头持仓：${formatNumber(raw.long_position)}（${formatChange(raw.long_change)}）`,
+            `空头持仓：${formatNumber(raw.short_position)}（${formatChange(raw.short_change)}）`,
+            `多头变化：${formatChange(raw.long_change)}`,
+            `空头变化：${formatChange(raw.short_change)}`,
+            `多空净变化：${formatChange(raw.net_change)}`,
+          ].join("<br/>");
+        },
+      },
+      legend: { show: false },
+      grid: { left: 90, right: 32, top: 24, bottom: 32 },
+      xAxis: { type: "value", name: "持仓量" },
+      yAxis: {
+        type: "category",
+        data: chartData.map((item) => item.contract),
+      },
+      series: [
+        {
+          name: "多头持仓",
+          type: "bar",
+          stack: "long",
+          data: longBars.map((item) => item.base),
+          itemStyle: { color: LONG_POSITION_COLOR },
+        },
+        {
+          name: "多头增减",
+          type: "bar",
+          stack: "long",
+          data: longBars.map((item) => item.change),
+          itemStyle: {
+            color: (params: any) => getLongChangeColor(chartData[params.dataIndex].long_change),
+          },
+          label: {
+            show: true,
+            position: "right",
+            formatter: (params: any) => {
+              const raw = chartData[params.dataIndex];
+              return `${formatNumber(raw.long_position)}（${formatChange(raw.long_change)}）`;
+            },
+          },
+        },
+        {
+          name: "空头持仓",
+          type: "bar",
+          stack: "short",
+          data: shortBars.map((item) => item.base),
+          itemStyle: { color: SHORT_POSITION_COLOR },
+        },
+        {
+          name: "空头增减",
+          type: "bar",
+          stack: "short",
+          data: shortBars.map((item) => item.change),
+          itemStyle: {
+            color: (params: any) => getShortChangeColor(chartData[params.dataIndex].short_change),
+          },
+          label: {
+            show: true,
+            position: "right",
+            formatter: (params: any) => {
+              const raw = chartData[params.dataIndex];
+              return `${formatNumber(raw.short_position)}（${formatChange(raw.short_change)}）`;
+            },
+          },
+        },
+      ],
+    };
+  }, [data]);
+
+  const brokerNetChartOption = useMemo(() => {
+    if (!data) return null;
+
+    const chartData = [...data.broker_summary].reverse();
+
+    return {
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (params: any) => {
+          const raw = chartData[params[0].dataIndex];
+
+          return [
+            raw.broker,
+            `多空净变化：${formatChange(raw.net_change)}`,
+            `多头变化：${formatChange(raw.long_change)}`,
+            `空头变化：${formatChange(raw.short_change)}`,
+          ].join("<br/>");
+        },
+      },
+      grid: { left: 90, right: 32, top: 24, bottom: 32 },
+      xAxis: { type: "value", name: "净变化" },
+      yAxis: {
+        type: "category",
+        data: chartData.map((item) => item.broker),
+      },
+      series: [
+        {
+          name: "净变化",
+          type: "bar",
+          data: chartData.map((item) => item.net_change),
+          itemStyle: {
+            color: (params: any) => (Number(params.value) >= 0 ? "#f5222d" : "#389e0d"),
+          },
+          label: {
+            show: true,
+            position: "right",
+            formatter: (params: any) => formatChange(Number(params.value)),
+          },
+        },
+      ],
+    };
+  }, [data]);
+
+  const contractNetChartOption = useMemo(() => {
+    if (!data) return null;
+
+    const chartData = [...data.contract_summary].slice(0, 10).reverse();
+
+    return {
+      tooltip: {
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (params: any) => {
+          const raw = chartData[params[0].dataIndex];
+
+          return [
+            raw.contract,
+            `多空净变化：${formatChange(raw.net_change)}`,
+            `多头变化：${formatChange(raw.long_change)}`,
+            `空头变化：${formatChange(raw.short_change)}`,
+          ].join("<br/>");
+        },
+      },
       grid: { left: 90, right: 32, top: 24, bottom: 32 },
       xAxis: { type: "value", name: "净变化" },
       yAxis: {
@@ -127,13 +395,16 @@ export default function ProductDashboard() {
       },
       series: [
         {
-          name: "合约净变化",
+          name: "净变化",
           type: "bar",
           data: chartData.map((item) => item.net_change),
+          itemStyle: {
+            color: (params: any) => (Number(params.value) >= 0 ? "#f5222d" : "#389e0d"),
+          },
           label: {
             show: true,
             position: "right",
-            formatter: (params: any) => Number(params.value).toLocaleString(),
+            formatter: (params: any) => formatChange(Number(params.value)),
           },
         },
       ],
@@ -143,18 +414,26 @@ export default function ProductDashboard() {
   const brokerColumns: ColumnsType<BrokerChange> = [
     { title: "席位", dataIndex: "broker", key: "broker" },
     {
-      title: "多头变化",
-      dataIndex: "long_change",
-      key: "long_change",
+      title: "多头",
+      key: "long",
       align: "right",
-      render: formatNumber,
+      render: (_, record) => (
+        <PositionChange
+          position={record.long_position}
+          change={record.long_change}
+        />
+      ),
     },
     {
-      title: "空头变化",
-      dataIndex: "short_change",
-      key: "short_change",
+      title: "空头",
+      key: "short",
       align: "right",
-      render: formatNumber,
+      render: (_, record) => (
+        <PositionChange
+          position={record.short_position}
+          change={record.short_change}
+        />
+      ),
     },
     {
       title: "净变化",
@@ -179,18 +458,26 @@ export default function ProductDashboard() {
   const contractColumns: ColumnsType<ContractSummary> = [
     { title: "合约", dataIndex: "contract", key: "contract" },
     {
-      title: "多头变化",
-      dataIndex: "long_change",
-      key: "long_change",
+      title: "多头",
+      key: "long",
       align: "right",
-      render: formatNumber,
+      render: (_, record) => (
+        <PositionChange
+          position={record.long_position}
+          change={record.long_change}
+        />
+      ),
     },
     {
-      title: "空头变化",
-      dataIndex: "short_change",
-      key: "short_change",
+      title: "空头",
+      key: "short",
       align: "right",
-      render: formatNumber,
+      render: (_, record) => (
+        <PositionChange
+          position={record.short_position}
+          change={record.short_change}
+        />
+      ),
     },
     {
       title: "净变化",
@@ -216,32 +503,28 @@ export default function ProductDashboard() {
     { title: "合约", dataIndex: "contract", key: "contract", fixed: "left", width: 110 },
     { title: "席位", dataIndex: "broker", key: "broker", width: 130 },
     {
-      title: "多头持仓",
-      dataIndex: "long_position",
-      key: "long_position",
+      title: "多头",
+      key: "long",
       align: "right",
-      render: formatNumber,
+      width: 150,
+      render: (_, record) => (
+        <PositionChange
+          position={record.long_position}
+          change={record.long_change}
+        />
+      ),
     },
     {
-      title: "多头变化",
-      dataIndex: "long_change",
-      key: "long_change",
+      title: "空头",
+      key: "short",
       align: "right",
-      render: formatNumber,
-    },
-    {
-      title: "空头持仓",
-      dataIndex: "short_position",
-      key: "short_position",
-      align: "right",
-      render: formatNumber,
-    },
-    {
-      title: "空头变化",
-      dataIndex: "short_change",
-      key: "short_change",
-      align: "right",
-      render: formatNumber,
+      width: 150,
+      render: (_, record) => (
+        <PositionChange
+          position={record.short_position}
+          change={record.short_change}
+        />
+      ),
     },
     {
       title: "净变化",
@@ -333,16 +616,33 @@ export default function ProductDashboard() {
 
             <Row gutter={[16, 16]}>
               <Col xs={24} lg={12}>
-                <Card title="五大席位净变化">
+                <Card title="五大席位多空变化">
                   {brokerChartOption && (
                     <ReactECharts option={brokerChartOption} style={{ height: 340 }} />
                   )}
                 </Card>
               </Col>
               <Col xs={24} lg={12}>
-                <Card title="合约净变化">
+                <Card title="合约多空变化">
                   {contractChartOption && (
                     <ReactECharts option={contractChartOption} style={{ height: 340 }} />
+                  )}
+                </Card>
+              </Col>
+            </Row>
+
+            <Row gutter={[16, 16]}>
+              <Col xs={24} lg={12}>
+                <Card title="五大席位净变化对比">
+                  {brokerNetChartOption && (
+                    <ReactECharts option={brokerNetChartOption} style={{ height: 340 }} />
+                  )}
+                </Card>
+              </Col>
+              <Col xs={24} lg={12}>
+                <Card title="合约净变化对比">
+                  {contractNetChartOption && (
+                    <ReactECharts option={contractNetChartOption} style={{ height: 340 }} />
                   )}
                 </Card>
               </Col>

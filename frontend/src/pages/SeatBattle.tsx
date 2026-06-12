@@ -7,6 +7,7 @@ import {
   DatePicker,
   Input,
   Radio,
+  Select,
   Space,
   Table,
   Tag,
@@ -14,26 +15,13 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
-import {
-  fetchSeatTracker,
-  fetchSeatTrackerCategories,
-} from "../api/seatTrackerApi";
+import { fetchSeatBattle } from "../api/seatBattleApi";
 import { useDragScroll } from "../hooks/useDragScroll";
-import type { BrokerChange, SeatTrackerItem } from "../types/seatTracker";
+import type { SeatBattleItem } from "../types/seatBattle";
 
 const { Title, Paragraph } = Typography;
 
-const SIGNAL_OPTIONS = [
-  { label: "全部", value: "" },
-  { label: "强看多", value: "strong_long" },
-  { label: "强看空", value: "strong_short" },
-  { label: "冲突", value: "conflict" },
-  { label: "正向", value: "positive" },
-  { label: "反向", value: "reverse" },
-  { label: "中性", value: "neutral" },
-];
-
-const TRACKED_BROKERS = [
+const DEFAULT_BROKERS = [
   "高盛期货",
   "摩根大通",
   "国泰君安",
@@ -41,17 +29,17 @@ const TRACKED_BROKERS = [
   "徽商期货",
 ];
 
+const SIGNAL_OPTIONS = [
+  { label: "全部", value: "" },
+  { label: "方向相反", value: "opposite" },
+  { label: "方向相同", value: "same" },
+  { label: "阵营A单边", value: "side_a_only" },
+  { label: "阵营B单边", value: "side_b_only" },
+  { label: "中性", value: "neutral" },
+];
+
 function formatNumber(value: number) {
   return value.toLocaleString();
-}
-
-function getSignalColor(signal: string) {
-  if (signal === "strong_long") return "red";
-  if (signal === "strong_short") return "green";
-  if (signal === "conflict") return "gold";
-  if (signal === "positive") return "blue";
-  if (signal === "reverse") return "purple";
-  return "default";
 }
 
 function getNumberColor(value: number) {
@@ -60,72 +48,38 @@ function getNumberColor(value: number) {
   return "#6b7280";
 }
 
-function findBrokerChange(item: SeatTrackerItem, broker: string): BrokerChange {
-  return (
-    item.broker_changes.find((change) => change.broker === broker) || {
-      broker,
-      long_position: 0,
-      long_change: 0,
-      short_position: 0,
-      short_change: 0,
-      net_change: 0,
-      direction: "neutral",
-      direction_cn: "中性",
-    }
-  );
+function getSignalColor(signal: string) {
+  if (signal === "opposite") return "red";
+  if (signal === "same") return "blue";
+  if (signal === "side_a_only") return "purple";
+  if (signal === "side_b_only") return "cyan";
+  return "default";
 }
 
-export default function SeatTracker() {
+function encodeBrokers(brokers: string[]) {
+  return encodeURIComponent(brokers.join(","));
+}
+
+export default function SeatBattle() {
   const dragScrollHandlers = useDragScroll();
   const [date, setDate] = useState("2026-06-09");
+  const [sideA, setSideA] = useState(DEFAULT_BROKERS.slice(0, 3));
+  const [sideB, setSideB] = useState(DEFAULT_BROKERS.slice(3));
   const [signal, setSignal] = useState("");
   const [category, setCategory] = useState("");
   const [keyword, setKeyword] = useState("");
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [brokers, setBrokers] = useState(DEFAULT_BROKERS);
   const [categories, setCategories] = useState<string[]>([]);
-  const [items, setItems] = useState<SeatTrackerItem[]>([]);
+  const [items, setItems] = useState<SeatBattleItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  async function loadCategories(targetDate: string) {
-    const result = await fetchSeatTrackerCategories(targetDate);
-    setCategories(result.categories);
-  }
-
-  async function loadData() {
-    try {
-      setLoading(true);
-      setErrorMessage("");
-
-      const result = await fetchSeatTracker({
-        date,
-        signal,
-        category,
-        keyword: searchKeyword,
-      });
-
-      setItems(result.items);
-      setTotal(result.total);
-      setCategories(result.categories);
-    } catch (error) {
-      console.error(error);
-      setErrorMessage("席位追踪数据加载失败，请确认后端已启动并存在对应日期数据。");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    loadCategories(date).catch((error) => {
-      console.error(error);
-      setErrorMessage("板块列表加载失败。");
-    });
-  }, [date]);
-
-  useEffect(() => {
-    loadData();
-  }, [date, signal, category, searchKeyword]);
+  const brokerOptions = brokers.map((broker) => ({
+    label: broker,
+    value: broker,
+  }));
 
   const categoryOptions = useMemo(
     () => [
@@ -135,7 +89,47 @@ export default function SeatTracker() {
     [categories]
   );
 
-  const columns: ColumnsType<SeatTrackerItem> = [
+  async function loadData() {
+    if (sideA.length === 0 || sideB.length === 0) {
+      setErrorMessage("两个阵营都至少需要选择一个席位。");
+      return;
+    }
+
+    if (sideA.some((broker) => sideB.includes(broker))) {
+      setErrorMessage("两个阵营不能选择相同席位。");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setErrorMessage("");
+
+      const result = await fetchSeatBattle({
+        date,
+        sideA,
+        sideB,
+        signal,
+        category,
+        keyword: searchKeyword,
+      });
+
+      setItems(result.items);
+      setTotal(result.total);
+      setBrokers(result.brokers);
+      setCategories(result.categories);
+    } catch (error: any) {
+      console.error(error);
+      setErrorMessage(error?.response?.data?.detail || "席位对对碰数据加载失败。");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadData();
+  }, [date, sideA, sideB, signal, category, searchKeyword]);
+
+  const columns: ColumnsType<SeatBattleItem> = [
     {
       title: "品种",
       dataIndex: "product",
@@ -147,87 +141,83 @@ export default function SeatTracker() {
       title: "板块",
       dataIndex: "category",
       key: "category",
-      width: 100,
+      width: 110,
     },
     {
-      title: "信号",
-      dataIndex: "signal_cn",
-      key: "signal",
-      width: 100,
-      render: (value: string, record) => (
-        <Tag color={getSignalColor(record.signal)}>{value}</Tag>
-      ),
-    },
-    {
-      title: "主要变化合约",
-      dataIndex: "main_contract",
-      key: "main_contract",
-      width: 130,
-    },
-    {
-      title: "主要合约净变化",
-      dataIndex: "main_contract_net_change",
-      key: "main_contract_net_change",
-      align: "right",
-      width: 150,
-      sorter: (a, b) => a.main_contract_net_change - b.main_contract_net_change,
-      render: (value: number) => (
-        <span style={{ color: getNumberColor(value) }}>{formatNumber(value)}</span>
-      ),
-    },
-    {
-      title: "次要变化合约",
-      dataIndex: "second_contract",
-      key: "second_contract",
-      width: 130,
-      render: (value: string) => value || "-",
-    },
-    {
-      title: "次要合约净变化",
-      dataIndex: "second_contract_net_change",
-      key: "second_contract_net_change",
-      align: "right",
-      width: 150,
-      sorter: (a, b) => a.second_contract_net_change - b.second_contract_net_change,
-      render: (value: number) => (
-        <span style={{ color: getNumberColor(value) }}>{formatNumber(value)}</span>
-      ),
-    },
-    {
-      title: "全部合约聚合净变化",
-      dataIndex: "all_contract_net_change",
-      key: "all_contract_net_change",
-      align: "right",
-      width: 170,
-      defaultSortOrder: "descend",
-      sorter: (a, b) =>
-        Math.abs(a.all_contract_net_change) - Math.abs(b.all_contract_net_change),
-      render: (value: number) => (
-        <span style={{ color: getNumberColor(value) }}>{formatNumber(value)}</span>
-      ),
-    },
-    ...TRACKED_BROKERS.map((broker) => ({
-      title: broker,
-      key: broker,
-      align: "right" as const,
+      title: "对比信号",
+      dataIndex: "battle_signal_cn",
+      key: "battle_signal",
       width: 120,
-      render: (_: unknown, record: SeatTrackerItem) => {
-        const change = findBrokerChange(record, broker);
-
-        return (
-          <span style={{ color: getNumberColor(change.net_change) }}>
-            {change.net_change === 0 ? "-" : formatNumber(change.net_change)}
-          </span>
-        );
-      },
-    })),
+      render: (value: string, record) => (
+        <Tag color={getSignalColor(record.battle_signal)}>{value}</Tag>
+      ),
+    },
+    {
+      title: "阵营A净变化",
+      key: "side_a_net_change",
+      align: "right",
+      width: 140,
+      sorter: (a, b) => a.side_a.net_change - b.side_a.net_change,
+      render: (_, record) => (
+        <span style={{ color: getNumberColor(record.side_a.net_change) }}>
+          {formatNumber(record.side_a.net_change)}
+        </span>
+      ),
+    },
+    {
+      title: "阵营A方向",
+      key: "side_a_direction",
+      width: 110,
+      render: (_, record) => record.side_a.direction_cn,
+    },
+    {
+      title: "阵营B净变化",
+      key: "side_b_net_change",
+      align: "right",
+      width: 140,
+      sorter: (a, b) => a.side_b.net_change - b.side_b.net_change,
+      render: (_, record) => (
+        <span style={{ color: getNumberColor(record.side_b.net_change) }}>
+          {formatNumber(record.side_b.net_change)}
+        </span>
+      ),
+    },
+    {
+      title: "阵营B方向",
+      key: "side_b_direction",
+      width: 110,
+      render: (_, record) => record.side_b.direction_cn,
+    },
+    {
+      title: "差值 A-B",
+      dataIndex: "difference",
+      key: "difference",
+      align: "right",
+      width: 130,
+      sorter: (a, b) => a.difference - b.difference,
+      render: (value: number) => (
+        <span style={{ color: getNumberColor(value) }}>{formatNumber(value)}</span>
+      ),
+    },
+    {
+      title: "合计变化",
+      dataIndex: "total_abs_change",
+      key: "total_abs_change",
+      align: "right",
+      width: 130,
+      defaultSortOrder: "descend",
+      sorter: (a, b) => a.total_abs_change - b.total_abs_change,
+      render: formatNumber,
+    },
     {
       title: "操作",
       key: "action",
       fixed: "right",
       width: 100,
       render: (_, record) => (
-        <Link to={`/products/${encodeURIComponent(record.product)}?date=${date}`}>
+        <Link
+          to={`/seat-battle/products/${encodeURIComponent(record.product)}?date=${date}&sideA=${encodeBrokers(sideA)}&sideB=${encodeBrokers(sideB)}`}
+        >
           查看详情
         </Link>
       ),
@@ -238,9 +228,9 @@ export default function SeatTracker() {
     <div className="page">
       <Space direction="vertical" size={20} style={{ width: "100%" }}>
         <div>
-          <Title level={2}>期货席位追踪</Title>
+          <Title level={2}>席位对对碰</Title>
           <Paragraph type="secondary">
-            聚焦三大主力席位与两大散户席位的反向结构，并保留五大席位明细。
+            自定义两个席位阵营，比较它们在各品种和合约上的持仓变化。
           </Paragraph>
         </div>
 
@@ -270,6 +260,8 @@ export default function SeatTracker() {
 
               <Button
                 onClick={() => {
+                  setSideA(DEFAULT_BROKERS.slice(0, 3));
+                  setSideB(DEFAULT_BROKERS.slice(3));
                   setSignal("");
                   setCategory("");
                   setKeyword("");
@@ -280,9 +272,31 @@ export default function SeatTracker() {
               </Button>
             </Space>
 
+            <Space wrap style={{ width: "100%" }}>
+              <span>阵营A：</span>
+              <Select
+                mode="multiple"
+                style={{ minWidth: 360 }}
+                options={brokerOptions}
+                value={sideA}
+                onChange={setSideA}
+                placeholder="选择阵营A席位"
+              />
+
+              <span>阵营B：</span>
+              <Select
+                mode="multiple"
+                style={{ minWidth: 280 }}
+                options={brokerOptions}
+                value={sideB}
+                onChange={setSideB}
+                placeholder="选择阵营B席位"
+              />
+            </Space>
+
             <Space direction="vertical" size={12} style={{ width: "100%" }}>
               <div>
-                <span style={{ marginRight: 12 }}>信号筛选：</span>
+                <span style={{ marginRight: 12 }}>对比信号：</span>
                 <Radio.Group
                   optionType="button"
                   buttonStyle="solid"
@@ -310,7 +324,7 @@ export default function SeatTracker() {
           <Alert type="error" message="加载失败" description={errorMessage} showIcon />
         )}
 
-        <Card title={`席位追踪列表：共 ${total} 个品种`}>
+        <Card title={`席位对比列表：共 ${total} 个品种`}>
           <div className="draggable-table" {...dragScrollHandlers}>
             <Table
               rowKey={(record) => `${record.category}-${record.product}`}
@@ -323,7 +337,7 @@ export default function SeatTracker() {
                 showQuickJumper: true,
                 showTotal: (count) => `共 ${count} 个品种`,
               }}
-              scroll={{ x: 1700 }}
+              scroll={{ x: 1320 }}
             />
           </div>
         </Card>

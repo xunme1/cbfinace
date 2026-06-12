@@ -46,6 +46,8 @@ Thumbs.db
 
 # Local notes
 更新日志与信号说明.txt
+更新日志_*.txt
+老板版更新日志_*.txt
 
 # Scraper sensitive/debug artifacts
 jykc_scraper/
