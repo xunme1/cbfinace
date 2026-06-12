@@ -106,7 +106,9 @@ export default function Trends() {
       setCategories(result.categories);
     } catch (error) {
       console.error(error);
-      setErrorMessage("历史趋势加载失败，请确认近一月 positions CSV 已补齐。");
+      setErrorMessage(
+        "历史趋势加载失败。系统按已有交易日 CSV 统计，周末和休市日不会计入；请确认所选结束日期之前存在足够的 positions CSV。"
+      );
     } finally {
       setLoading(false);
     }
@@ -217,7 +219,7 @@ export default function Trends() {
         <div>
           <Title level={2}>历史趋势</Title>
           <Paragraph type="secondary">
-            观察主力与散户方向是否连续、信号是否增强或反转。
+            观察主力与散户方向是否连续、信号是否增强或反转。趋势范围按已有交易日数据计算，周末和休市日自动跳过。
           </Paragraph>
         </div>
 

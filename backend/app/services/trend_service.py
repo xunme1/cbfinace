@@ -1,14 +1,15 @@
 from pathlib import Path
 from typing import Any
+from functools import lru_cache
+from datetime import datetime, timedelta
 
 from app.core.paths import DATA_DIR
 from app.services.seat_tracker_service import (
     CORE_BROKERS,
     RETAIL_BROKERS,
+    TRACKED_BROKERS,
     get_direction,
     get_direction_cn,
-    get_product_broker_summary,
-    get_product_contract_summary,
     load_position_records,
     classify_signal,
 )
@@ -32,6 +33,18 @@ def resolve_trend_dates(end_date: str | None = None, days: int = 10) -> list[str
 
     if end_date:
         dates = [date for date in dates if date <= end_date]
+        end = datetime.strptime(end_date, "%Y-%m-%d").date()
+    elif dates:
+        end = datetime.strptime(dates[-1], "%Y-%m-%d").date()
+    else:
+        return []
+
+    start = end - timedelta(days=days * 2 + 7)
+    dates = [
+        date
+        for date in dates
+        if datetime.strptime(date, "%Y-%m-%d").date() >= start
+    ]
 
     return dates[-days:]
 
@@ -62,48 +75,129 @@ def summarize_group(broker_summary: list[dict[str, Any]], brokers: list[str]) ->
     }
 
 
-def build_daily_product_record(date: str, product: str, df) -> dict[str, Any] | None:
-    product_df = df[df["product"] == product]
+def build_broker_summary_from_grouped(product: str, broker_group) -> list[dict[str, Any]]:
+    if product in broker_group.index.get_level_values("product"):
+        product_group = broker_group.loc[product]
+    else:
+        product_group = None
 
-    if product_df.empty:
-        return None
+    result = []
 
-    category = str(product_df["category"].iloc[0])
-    broker_summary = get_product_broker_summary(df, product)
-    contract_summary = get_product_contract_summary(df, product)
-    signal, signal_cn = classify_signal(broker_summary, contract_summary)
-    core_summary = summarize_group(broker_summary, CORE_BROKERS)
-    retail_summary = summarize_group(broker_summary, RETAIL_BROKERS)
-    total_net_change = sum(item["net_change"] for item in contract_summary)
+    for broker in TRACKED_BROKERS:
+        if product_group is not None and broker in product_group.index:
+            row = product_group.loc[broker]
+            long_position = int(row["long_position"])
+            long_change = int(row["long_change"])
+            short_position = int(row["short_position"])
+            short_change = int(row["short_change"])
+            net_change = int(row["net_change"])
+        else:
+            long_position = 0
+            long_change = 0
+            short_position = 0
+            short_change = 0
+            net_change = 0
 
-    return {
-        "date": date,
-        "product": product,
-        "category": category,
-        "signal": signal,
-        "signal_cn": signal_cn,
-        "core": core_summary,
-        "retail": retail_summary,
-        "total_net_change": int(total_net_change),
-        "broker_summary": broker_summary,
-        "contract_summary": contract_summary,
-    }
+        result.append(
+            {
+                "broker": broker,
+                "long_position": long_position,
+                "long_change": long_change,
+                "short_position": short_position,
+                "short_change": short_change,
+                "net_change": net_change,
+                "direction": get_direction(net_change),
+                "direction_cn": get_direction_cn(net_change),
+            }
+        )
+
+    return result
+
+
+def build_contract_summary_from_grouped(product: str, contract_group) -> list[dict[str, Any]]:
+    if product not in contract_group.index.get_level_values("product"):
+        return []
+
+    product_group = contract_group.loc[product].reset_index()
+    product_group["abs_net_change"] = product_group["net_change"].abs()
+    product_group = product_group.sort_values("abs_net_change", ascending=False)
+
+    result = []
+
+    for _, row in product_group.iterrows():
+        net_change = int(row["net_change"])
+        result.append(
+            {
+                "contract": str(row["contract"]),
+                "long_position": int(row["long_position"]),
+                "long_change": int(row["long_change"]),
+                "short_position": int(row["short_position"]),
+                "short_change": int(row["short_change"]),
+                "net_change": net_change,
+                "direction": get_direction(net_change),
+                "direction_cn": get_direction_cn(net_change),
+            }
+        )
+
+    return result
+
+
+@lru_cache(maxsize=80)
+def load_daily_record(date: str) -> dict[str, dict[str, Any]]:
+    _, df = load_position_records(date)
+
+    broker_group = df.groupby(["product", "broker"]).agg(
+        long_position=("long_position", "sum"),
+        long_change=("long_change", "sum"),
+        short_position=("short_position", "sum"),
+        short_change=("short_change", "sum"),
+        net_change=("net_change", "sum"),
+    )
+    contract_group = df.groupby(["product", "contract"]).agg(
+        long_position=("long_position", "sum"),
+        long_change=("long_change", "sum"),
+        short_position=("short_position", "sum"),
+        short_change=("short_change", "sum"),
+        net_change=("net_change", "sum"),
+    )
+    product_categories = (
+        df.groupby("product")["category"]
+        .first()
+        .astype(str)
+        .to_dict()
+    )
+
+    records = {}
+
+    for product, category in product_categories.items():
+        broker_summary = build_broker_summary_from_grouped(product, broker_group)
+        contract_summary = build_contract_summary_from_grouped(product, contract_group)
+        signal, signal_cn = classify_signal(broker_summary, contract_summary)
+        core_summary = summarize_group(broker_summary, CORE_BROKERS)
+        retail_summary = summarize_group(broker_summary, RETAIL_BROKERS)
+        total_net_change = sum(item["net_change"] for item in contract_summary)
+
+        records[str(product)] = {
+            "date": date,
+            "product": str(product),
+            "category": category,
+            "signal": signal,
+            "signal_cn": signal_cn,
+            "core": core_summary,
+            "retail": retail_summary,
+            "total_net_change": int(total_net_change),
+            "broker_summary": broker_summary,
+            "contract_summary": contract_summary,
+        }
+
+    return records
 
 
 def load_daily_records(dates: list[str]) -> dict[str, dict[str, dict[str, Any]]]:
     result: dict[str, dict[str, dict[str, Any]]] = {}
 
     for date in dates:
-        _, df = load_position_records(date)
-        result[date] = {}
-
-        products = sorted(str(item) for item in df["product"].dropna().unique().tolist())
-
-        for product in products:
-            record = build_daily_product_record(date, product, df)
-
-            if record:
-                result[date][product] = record
+        result[date] = load_daily_record(date)
 
     return result
 
