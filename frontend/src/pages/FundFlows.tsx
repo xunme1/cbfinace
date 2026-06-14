@@ -15,6 +15,7 @@ import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import { fetchFundFlowRank } from "../api/fundFlowApi";
 import { useDragScroll } from "../hooks/useDragScroll";
+import { useAvailableDates } from "../hooks/useAvailableDates";
 import type { FundFlowRankItem, FundFlowRankResponse } from "../types/fundFlow";
 
 const { Title, Paragraph } = Typography;
@@ -42,12 +43,15 @@ function getValueColor(value: number) {
 export default function FundFlows() {
   const inflowTableDrag = useDragScroll();
   const outflowTableDrag = useDragScroll();
-  const [date, setDate] = useState("2026-03-27");
+  const { latestDate, disabledDate } = useAvailableDates("fundFlow");
+  const [date, setDate] = useState("");
   const [data, setData] = useState<FundFlowRankResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   async function loadData(targetDate: string) {
+    if (!targetDate) return;
+
     try {
       setLoading(true);
       setErrorMessage("");
@@ -61,7 +65,15 @@ export default function FundFlows() {
   }
 
   useEffect(() => {
-    loadData(date);
+    if (!date && latestDate) {
+      setDate(latestDate);
+    }
+  }, [date, latestDate]);
+
+  useEffect(() => {
+    if (date) {
+      loadData(date);
+    }
   }, [date]);
 
   const columns: ColumnsType<FundFlowRankItem> = [
@@ -69,11 +81,7 @@ export default function FundFlows() {
       title: "品种",
       dataIndex: "product",
       key: "product",
-      render: (value: string) => (
-        <Link to={`/fund-flows/products/${encodeURIComponent(value)}?date=${date}`}>
-          {value}
-        </Link>
-      ),
+      render: (value: string) => value,
     },
     {
       title: "方向",
@@ -103,6 +111,17 @@ export default function FundFlows() {
       key: "brokers",
       ellipsis: true,
     },
+    {
+      title: "操作",
+      key: "action",
+      fixed: "right",
+      width: 100,
+      render: (_, record) => (
+        <Link to={`/fund-flows/products/${encodeURIComponent(record.product)}?date=${date}`}>
+          查看详情
+        </Link>
+      ),
+    },
   ];
 
   return (
@@ -119,7 +138,8 @@ export default function FundFlows() {
           <Space>
             <span>分析日期：</span>
             <DatePicker
-              value={dayjs(date)}
+              value={date ? dayjs(date) : null}
+              disabledDate={disabledDate}
               onChange={(value) => {
                 if (value) {
                   setDate(value.format("YYYY-MM-DD"));
@@ -150,7 +170,7 @@ export default function FundFlows() {
                     columns={columns}
                     dataSource={data.top_inflows}
                     pagination={false}
-                    scroll={{ x: 760 }}
+                    scroll={{ x: 860 }}
                   />
                 </div>
               </Card>
@@ -164,7 +184,7 @@ export default function FundFlows() {
                     columns={columns}
                     dataSource={data.top_outflows}
                     pagination={false}
-                    scroll={{ x: 760 }}
+                    scroll={{ x: 860 }}
                   />
                 </div>
               </Card>

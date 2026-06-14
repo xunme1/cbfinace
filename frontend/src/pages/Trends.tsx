@@ -16,6 +16,7 @@ import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import { fetchTrends } from "../api/trendApi";
 import { useDragScroll } from "../hooks/useDragScroll";
+import { useAvailableDates } from "../hooks/useAvailableDates";
 import type { TrendItem } from "../types/trends";
 
 const { Title, Paragraph } = Typography;
@@ -66,7 +67,8 @@ function getStatusColor(status: string) {
 
 export default function Trends() {
   const dragScrollHandlers = useDragScroll();
-  const [endDate, setEndDate] = useState("2026-06-12");
+  const { latestDate, disabledDate } = useAvailableDates("positions");
+  const [endDate, setEndDate] = useState("");
   const [days, setDays] = useState(10);
   const [category, setCategory] = useState("");
   const [signal, setSignal] = useState("");
@@ -88,6 +90,8 @@ export default function Trends() {
   );
 
   async function loadData() {
+    if (!endDate) return;
+
     try {
       setLoading(true);
       setErrorMessage("");
@@ -115,7 +119,15 @@ export default function Trends() {
   }
 
   useEffect(() => {
-    loadData();
+    if (!endDate && latestDate) {
+      setEndDate(latestDate);
+    }
+  }, [endDate, latestDate]);
+
+  useEffect(() => {
+    if (endDate) {
+      loadData();
+    }
   }, [endDate, days, category, signal, searchKeyword]);
 
   const columns: ColumnsType<TrendItem> = [
@@ -228,7 +240,8 @@ export default function Trends() {
             <Space wrap>
               <span>结束日期：</span>
               <DatePicker
-                value={dayjs(endDate)}
+                value={endDate ? dayjs(endDate) : null}
+                disabledDate={disabledDate}
                 onChange={(value) => {
                   if (value) setEndDate(value.format("YYYY-MM-DD"));
                 }}

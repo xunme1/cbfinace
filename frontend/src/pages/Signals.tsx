@@ -20,6 +20,7 @@ import {
   fetchSignalTypes,
   fetchSignalCategories,
 } from "../api/signalApi";
+import { useAvailableDates } from "../hooks/useAvailableDates";
 
 const { Title, Paragraph } = Typography;
 
@@ -40,7 +41,8 @@ function getSignalName(signalType: string) {
 }
 
 export default function Signals() {
-  const [date, setDate] = useState("2026-06-09");
+  const { latestDate, disabledDate } = useAvailableDates("positions");
+  const [date, setDate] = useState("");
   const [signalType, setSignalType] = useState<string | undefined>();
   const [category, setCategory] = useState<string | undefined>();
   const [keyword, setKeyword] = useState("");
@@ -54,6 +56,8 @@ export default function Signals() {
   const [errorMessage, setErrorMessage] = useState("");
 
   async function loadOptions(targetDate: string) {
+    if (!targetDate) return;
+
     const [typesResult, categoriesResult] = await Promise.all([
       fetchSignalTypes(),
       fetchSignalCategories(targetDate),
@@ -64,6 +68,8 @@ export default function Signals() {
   }
 
   async function loadSignals() {
+    if (!date) return;
+
     try {
       setLoading(true);
       setErrorMessage("");
@@ -88,6 +94,14 @@ export default function Signals() {
   }
 
   useEffect(() => {
+    if (!date && latestDate) {
+      setDate(latestDate);
+    }
+  }, [date, latestDate]);
+
+  useEffect(() => {
+    if (!date) return;
+
     loadOptions(date).catch((error) => {
       console.error(error);
       setErrorMessage("筛选选项加载失败。");
@@ -95,7 +109,9 @@ export default function Signals() {
   }, [date]);
 
   useEffect(() => {
-    loadSignals();
+    if (date) {
+      loadSignals();
+    }
   }, [date, signalType, category]);
 
   const columns: ColumnsType<SignalItem> = [
@@ -190,7 +206,8 @@ export default function Signals() {
           <Space wrap>
             <span>分析日期：</span>
             <DatePicker
-              value={dayjs(date)}
+              value={date ? dayjs(date) : null}
+              disabledDate={disabledDate}
               onChange={(value) => {
                 if (value) {
                   setDate(value.format("YYYY-MM-DD"));

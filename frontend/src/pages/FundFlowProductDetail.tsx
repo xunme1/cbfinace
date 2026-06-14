@@ -19,6 +19,7 @@ import ReactECharts from "echarts-for-react";
 import { fetchProductFundFlowDetail } from "../api/fundFlowApi";
 import { fetchProductDashboard } from "../api/productDashboardApi";
 import { useDragScroll } from "../hooks/useDragScroll";
+import { useAvailableDates } from "../hooks/useAvailableDates";
 import type { FundFlowDetailItem, FundFlowProductDetailResponse } from "../types/fundFlow";
 import type {
   ContractSummary,
@@ -94,9 +95,10 @@ export default function FundFlowProductDetail() {
   const [searchParams] = useSearchParams();
   const fundFlowTableDrag = useDragScroll();
   const contractTableDrag = useDragScroll();
+  const { latestDate } = useAvailableDates("fundFlow");
 
   const productName = product ? decodeURIComponent(product) : "";
-  const date = searchParams.get("date") || "2026-03-27";
+  const date = searchParams.get("date") || latestDate;
 
   const [fundFlowData, setFundFlowData] =
     useState<FundFlowProductDetailResponse | null>(null);
@@ -106,6 +108,8 @@ export default function FundFlowProductDetail() {
   const [positionError, setPositionError] = useState("");
 
   async function loadData() {
+    if (!date) return;
+
     if (!productName) {
       setFundFlowError("缺少品种名称。");
       return;

@@ -17,6 +17,7 @@ import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import { fetchSeatBattle } from "../api/seatBattleApi";
 import { useDragScroll } from "../hooks/useDragScroll";
+import { useAvailableDates } from "../hooks/useAvailableDates";
 import type { SeatBattleItem } from "../types/seatBattle";
 
 const { Title, Paragraph } = Typography;
@@ -62,7 +63,8 @@ function encodeBrokers(brokers: string[]) {
 
 export default function SeatBattle() {
   const dragScrollHandlers = useDragScroll();
-  const [date, setDate] = useState("2026-06-09");
+  const { latestDate, disabledDate } = useAvailableDates("positions");
+  const [date, setDate] = useState("");
   const [sideA, setSideA] = useState(DEFAULT_BROKERS.slice(0, 3));
   const [sideB, setSideB] = useState(DEFAULT_BROKERS.slice(3));
   const [signal, setSignal] = useState("");
@@ -90,6 +92,8 @@ export default function SeatBattle() {
   );
 
   async function loadData() {
+    if (!date) return;
+
     if (sideA.length === 0 || sideB.length === 0) {
       setErrorMessage("两个阵营都至少需要选择一个席位。");
       return;
@@ -126,7 +130,15 @@ export default function SeatBattle() {
   }
 
   useEffect(() => {
-    loadData();
+    if (!date && latestDate) {
+      setDate(latestDate);
+    }
+  }, [date, latestDate]);
+
+  useEffect(() => {
+    if (date) {
+      loadData();
+    }
   }, [date, sideA, sideB, signal, category, searchKeyword]);
 
   const columns: ColumnsType<SeatBattleItem> = [
@@ -239,7 +251,8 @@ export default function SeatBattle() {
             <Space wrap>
               <span>分析日期：</span>
               <DatePicker
-                value={dayjs(date)}
+                value={date ? dayjs(date) : null}
+                disabledDate={disabledDate}
                 onChange={(value) => {
                   if (value) {
                     setDate(value.format("YYYY-MM-DD"));

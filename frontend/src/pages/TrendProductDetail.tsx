@@ -15,6 +15,7 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import ReactECharts from "echarts-for-react";
 import { fetchProductTrend } from "../api/trendApi";
+import { useAvailableDates } from "../hooks/useAvailableDates";
 import type { ProductTrendResponse, TrendDailyItem } from "../types/trends";
 
 const { Title, Paragraph } = Typography;
@@ -42,8 +43,9 @@ export default function TrendProductDetail() {
   const navigate = useNavigate();
   const { product } = useParams();
   const [searchParams] = useSearchParams();
+  const { latestDate } = useAvailableDates("positions");
   const productName = product ? decodeURIComponent(product) : "";
-  const endDate = searchParams.get("endDate") || "2026-06-12";
+  const endDate = searchParams.get("endDate") || latestDate;
   const days = Number(searchParams.get("days") || 10);
 
   const [data, setData] = useState<ProductTrendResponse | null>(null);
@@ -51,6 +53,8 @@ export default function TrendProductDetail() {
   const [errorMessage, setErrorMessage] = useState("");
 
   async function loadData() {
+    if (!endDate) return;
+
     if (!productName) {
       setErrorMessage("缺少品种名称。");
       return;

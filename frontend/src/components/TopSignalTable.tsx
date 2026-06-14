@@ -24,7 +24,7 @@ function getSignalName(signalType: string) {
   return "噪音";
 }
 
-export default function TopSignalTable({ data, date = "2026-03-27" }: TopSignalTableProps)  {
+export default function TopSignalTable({ data, date = "" }: TopSignalTableProps)  {
   const columns: ColumnsType<SignalItem> = [
     {
       title: "品种",

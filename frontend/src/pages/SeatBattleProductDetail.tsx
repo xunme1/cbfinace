@@ -18,6 +18,7 @@ import type { ColumnsType } from "antd/es/table";
 import ReactECharts from "echarts-for-react";
 import { fetchSeatBattleProductDetail } from "../api/seatBattleApi";
 import { useDragScroll } from "../hooks/useDragScroll";
+import { useAvailableDates } from "../hooks/useAvailableDates";
 import type {
   BrokerContractBattleRow,
   ContractBattleRow,
@@ -61,9 +62,10 @@ export default function SeatBattleProductDetail() {
   const { product } = useParams();
   const [searchParams] = useSearchParams();
   const detailTableDrag = useDragScroll();
+  const { latestDate } = useAvailableDates("positions");
 
   const productName = product ? decodeURIComponent(product) : "";
-  const date = searchParams.get("date") || "2026-06-09";
+  const date = searchParams.get("date") || latestDate;
   const sideA = parseQueryBrokers(searchParams.get("sideA"), DEFAULT_SIDE_A);
   const sideB = parseQueryBrokers(searchParams.get("sideB"), DEFAULT_SIDE_B);
 
@@ -72,6 +74,8 @@ export default function SeatBattleProductDetail() {
   const [errorMessage, setErrorMessage] = useState("");
 
   async function loadData() {
+    if (!date) return;
+
     if (!productName) {
       setErrorMessage("缺少品种名称。");
       return;

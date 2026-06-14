@@ -19,12 +19,14 @@ import TopSignalTable from "../components/TopSignalTable";
 import SignalPieChart from "../components/SignalPieChart";
 import TopProductsChart from "../components/TopProductsChart";
 import MatrixScatterChart from "../components/MatrixScatterChart";
+import { useAvailableDates } from "../hooks/useAvailableDates";
 
 const { Title, Paragraph } = Typography;
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [date, setDate] = useState("2026-06-09");
+  const { latestDate, disabledDate } = useAvailableDates("positions");
+  const [date, setDate] = useState("");
 
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [signalDistribution, setSignalDistribution] =
@@ -37,6 +39,8 @@ export default function Dashboard() {
   const [errorMessage, setErrorMessage] = useState("");
 
   async function loadData(targetDate: string) {
+    if (!targetDate) return;
+
     try {
       setLoading(true);
       setErrorMessage("");
@@ -68,7 +72,15 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    loadData(date);
+    if (!date && latestDate) {
+      setDate(latestDate);
+    }
+  }, [date, latestDate]);
+
+  useEffect(() => {
+    if (date) {
+      loadData(date);
+    }
   }, [date]);
 
   function openProductDetail(product: string) {
@@ -94,7 +106,8 @@ export default function Dashboard() {
           <Space>
             <span>分析日期：</span>
             <DatePicker
-              value={dayjs(date)}
+              value={date ? dayjs(date) : null}
+              disabledDate={disabledDate}
               onChange={(value) => {
                 if (value) {
                   setDate(value.format("YYYY-MM-DD"));

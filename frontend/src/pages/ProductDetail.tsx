@@ -17,6 +17,7 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import ReactECharts from "echarts-for-react";
 import { fetchProductDetail } from "../api/productApi";
+import { useAvailableDates } from "../hooks/useAvailableDates";
 import type {
   BrokerContributionItem,
   ContractDetailItem,
@@ -50,8 +51,9 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { product } = useParams();
   const [searchParams] = useSearchParams();
+  const { latestDate } = useAvailableDates("positions");
 
-  const date = searchParams.get("date") || "2026-03-27";
+  const date = searchParams.get("date") || latestDate;
   const productName = product ? decodeURIComponent(product) : "";
 
   const [data, setData] = useState<ProductDetailResponse | null>(null);
@@ -59,6 +61,8 @@ export default function ProductDetail() {
   const [errorMessage, setErrorMessage] = useState("");
 
   async function loadData() {
+    if (!date) return;
+
     if (!productName) {
       setErrorMessage("缺少品种名称。");
       return;

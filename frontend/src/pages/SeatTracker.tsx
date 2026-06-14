@@ -19,6 +19,7 @@ import {
   fetchSeatTrackerCategories,
 } from "../api/seatTrackerApi";
 import { useDragScroll } from "../hooks/useDragScroll";
+import { useAvailableDates } from "../hooks/useAvailableDates";
 import type { BrokerChange, SeatTrackerItem } from "../types/seatTracker";
 
 const { Title, Paragraph } = Typography;
@@ -77,7 +78,8 @@ function findBrokerChange(item: SeatTrackerItem, broker: string): BrokerChange {
 
 export default function SeatTracker() {
   const dragScrollHandlers = useDragScroll();
-  const [date, setDate] = useState("2026-06-09");
+  const { latestDate, disabledDate } = useAvailableDates("positions");
+  const [date, setDate] = useState("");
   const [signal, setSignal] = useState("");
   const [category, setCategory] = useState("");
   const [keyword, setKeyword] = useState("");
@@ -89,11 +91,15 @@ export default function SeatTracker() {
   const [errorMessage, setErrorMessage] = useState("");
 
   async function loadCategories(targetDate: string) {
+    if (!targetDate) return;
+
     const result = await fetchSeatTrackerCategories(targetDate);
     setCategories(result.categories);
   }
 
   async function loadData() {
+    if (!date) return;
+
     try {
       setLoading(true);
       setErrorMessage("");
@@ -117,6 +123,14 @@ export default function SeatTracker() {
   }
 
   useEffect(() => {
+    if (!date && latestDate) {
+      setDate(latestDate);
+    }
+  }, [date, latestDate]);
+
+  useEffect(() => {
+    if (!date) return;
+
     loadCategories(date).catch((error) => {
       console.error(error);
       setErrorMessage("板块列表加载失败。");
@@ -124,7 +138,9 @@ export default function SeatTracker() {
   }, [date]);
 
   useEffect(() => {
-    loadData();
+    if (date) {
+      loadData();
+    }
   }, [date, signal, category, searchKeyword]);
 
   const categoryOptions = useMemo(
@@ -249,7 +265,8 @@ export default function SeatTracker() {
             <Space wrap>
               <span>分析日期：</span>
               <DatePicker
-                value={dayjs(date)}
+                value={date ? dayjs(date) : null}
+                disabledDate={disabledDate}
                 onChange={(value) => {
                   if (value) {
                     setDate(value.format("YYYY-MM-DD"));

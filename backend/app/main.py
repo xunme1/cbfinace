@@ -12,6 +12,7 @@ from app.api.routes_seat_battle import router as seat_battle_router
 from app.api.routes_trends import router as trends_router
 from app.api.routes_data_refresh import router as data_refresh_router
 from app.api.routes_fund_flows import router as fund_flows_router
+from app.api.routes_data_calendar import router as data_calendar_router
 from app.services.update_scheduler import start_update_scheduler
 
 
@@ -57,6 +58,7 @@ app.include_router(seat_battle_router)
 app.include_router(trends_router)
 app.include_router(data_refresh_router)
 app.include_router(fund_flows_router)
+app.include_router(data_calendar_router)
 
 
 @app.on_event("startup")

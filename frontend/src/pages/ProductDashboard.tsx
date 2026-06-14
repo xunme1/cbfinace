@@ -23,6 +23,7 @@ import type {
   ProductDashboardResponse,
 } from "../types/productDashboard";
 import type { BrokerChange } from "../types/seatTracker";
+import { useAvailableDates } from "../hooks/useAvailableDates";
 
 const { Title, Paragraph } = Typography;
 
@@ -113,15 +114,18 @@ export default function ProductDashboard() {
   const navigate = useNavigate();
   const { product } = useParams();
   const [searchParams] = useSearchParams();
+  const { latestDate } = useAvailableDates("positions");
 
   const productName = product ? decodeURIComponent(product) : "";
-  const date = searchParams.get("date") || "2026-06-09";
+  const date = searchParams.get("date") || latestDate;
 
   const [data, setData] = useState<ProductDashboardResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   async function loadData() {
+    if (!date) return;
+
     if (!productName) {
       setErrorMessage("缺少品种名称。");
       return;
