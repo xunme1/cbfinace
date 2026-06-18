@@ -14,6 +14,8 @@ from app.api.routes_data_refresh import router as data_refresh_router
 from app.api.routes_fund_flows import router as fund_flows_router
 from app.api.routes_data_calendar import router as data_calendar_router
 from app.services.update_scheduler import start_update_scheduler
+from app.us_stocks.api.rankings import router as us_stock_rankings_router
+from app.us_stocks.api.stocks import router as us_stock_stocks_router
 
 
 app = FastAPI(
@@ -59,6 +61,13 @@ app.include_router(trends_router)
 app.include_router(data_refresh_router)
 app.include_router(fund_flows_router)
 app.include_router(data_calendar_router)
+app.include_router(us_stock_rankings_router)
+app.include_router(us_stock_stocks_router)
+
+
+@app.get("/api/us-stocks/health")
+def us_stocks_health():
+    return {"status": "ok"}
 
 
 @app.on_event("startup")

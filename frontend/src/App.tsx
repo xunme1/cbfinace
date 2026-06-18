@@ -11,6 +11,7 @@ import ProductDashboard from "./pages/ProductDashboard";
 import FundFlows from "./pages/FundFlows";
 import FundFlowProductDetail from "./pages/FundFlowProductDetail";
 import Guide from "./pages/Guide";
+import UsStocks from "./pages/UsStocks";
 import "./App.css";
 
 const { Header, Content } = Layout;
@@ -28,12 +29,14 @@ function AppShell() {
     ? "/trends"
     : location.pathname.startsWith("/fund-flows")
     ? "/fund-flows"
+    : location.pathname.startsWith("/us-stocks")
+    ? "/us-stocks"
     : "/";
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Header className="app-header">
-        <div className="app-logo">期货席位追踪系统</div>
+        <div className="app-logo">交易可查分析系统</div>
 
         <Menu
           theme="dark"
@@ -65,6 +68,10 @@ function AppShell() {
               key: "/signals",
               label: <Link to="/signals">旧版信号</Link>,
             },
+            {
+              key: "/us-stocks",
+              label: <Link to="/us-stocks">美股强度</Link>,
+            },
           ]}
         />
       </Header>
@@ -82,6 +89,7 @@ function AppShell() {
           <Route path="/guide" element={<Guide />} />
           <Route path="/signals" element={<Signals />} />
           <Route path="/products/:product" element={<ProductDashboard />} />
+          <Route path="/us-stocks/*" element={<UsStocks />} />
         </Routes>
       </Content>
     </Layout>
